@@ -1,0 +1,108 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { formatBytes, formatDate } from '@/lib/format';
+import { listMedia, mediaUsage, toView } from '@/server/images';
+
+const images = listMedia().map((row) => ({ row, view: toView(row), usage: mediaUsage(row.id) }));
+---
+
+<AdminLayout title="Медиатека">
+  <div class="admin-head">
+    <div>
+      <h1>Медиатека</h1>
+      <p>Изображения для главной, раздела «О компании» и услуг. Фотографии проектов загружаются в самих проектах.</p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <label class="dropzone">
+      <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden data-library-upload />
+      <strong>Загрузить изображения</strong>
+      <span>JPG, PNG, WebP или AVIF, до 20 МБ каждое</span>
+    </label>
+    <div class="uploads" data-library-uploads></div>
+  </section>
+
+  <section class="panel">
+    {images.length === 0 && <p class="empty">Медиатека пуста.</p>}
+    <ul class="gallery" role="list" data-library-list>
+      {
+        images.map(({ row, view, usage }) => (
+          <li class="tile" data-id={row.id}>
+            <div class="tile__image" style="cursor:default">
+              <img src={view.thumb} alt="" loading="lazy" />
+            </div>
+            <input type="text" value={row.alt} maxlength="300" placeholder="Описание (alt)" aria-label="Описание изображения" data-saved={row.alt} />
+            <span class="field__hint">
+              {row.width}×{row.height} · {formatBytes(row.bytes)} · {formatDate(row.created_at)}
+            </span>
+            <span class="field__hint">{usage.length ? `Используется: ${usage.join(', ')}` : 'Нигде не используется'}</span>
+            <div class="tile__tools">
+              <a class="button button--ghost button--small" href={view.src} target="_blank" rel="noopener">Открыть</a>
+              <button type="button" class="icon-button icon-button--danger" data-delete aria-label="Удалить" disabled={usage.length > 0} title={usage.length ? 'Сначала замените его там, где оно используется' : 'Удалить'}>✕</button>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</AdminLayout>
+
+<script>
+  import { api, confirmDialog, toast, upload } from '@/scripts/admin/core';
+
+  const input = document.querySelector<HTMLInputElement>('[data-library-upload]');
+  const uploads = document.querySelector<HTMLElement>('[data-library-uploads]')!;
+  const list = document.querySelector<HTMLElement>('[data-library-list]')!;
+
+  input?.addEventListener('change', async () => {
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    let added = 0;
+    for (const file of files) {
+      const row = document.createElement('div');
+      row.className = 'upload';
+      row.innerHTML = '<span class="upload__name"></span><span></span><progress max="1" value="0"></progress>';
+      row.querySelector('.upload__name')!.textContent = file.name;
+      uploads.append(row);
+      const data = new FormData();
+      data.append('file', file);
+      const result = await upload('/api/admin/media', data, (f) => (row.querySelector('progress')!.value = f));
+      if (result.ok) {
+        row.remove();
+        added += 1;
+      } else {
+        row.classList.add('is-error');
+        row.querySelector('progress')?.remove();
+        const error = document.createElement('span');
+        error.className = 'upload__error';
+        error.textContent = result.error ?? 'Не загружено';
+        row.append(error);
+      }
+    }
+    // Nothing else on this page holds unsaved input, so a reload is safe here.
+    if (added) window.location.reload();
+  });
+
+  list.addEventListener('change', async (event) => {
+    const field = event.target as HTMLInputElement;
+    const tile = field.closest<HTMLElement>('.tile');
+    if (!tile || field.value === field.dataset.saved) return;
+    const result = await api('PATCH', `/api/admin/media/${tile.dataset.id}`, { alt: field.value });
+    if (!result.ok) return toast(result.error ?? 'Не сохранено', 'error');
+    field.dataset.saved = field.value;
+    toast('Описание сохранено');
+  });
+
+  list.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-delete]');
+    const tile = button?.closest<HTMLElement>('.tile');
+    if (!button || !tile) return;
+    const go = await confirmDialog({ title: 'Удалить изображение?', text: 'Файл будет удалён с сервера. Это нельзя отменить.', confirm: 'Удалить', danger: true });
+    if (!go) return;
+    const result = await api('DELETE', `/api/admin/media/${tile.dataset.id}`);
+    if (!result.ok) return toast(result.error ?? 'Не удалено', 'error');
+    tile.remove();
+    toast('Изображение удалено');
+  });
+</script>

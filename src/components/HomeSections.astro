@@ -1,0 +1,17 @@
+---
+import Hero from './Hero.astro';
+import ProjectShowcase from './ProjectShowcase.astro';
+import Services from './Services.astro';
+import Contact from './Contact.astro';
+
+/**
+ * The homepage, shared by the public page and the admin preview of drafts:
+ * opening screen, project hall, services and stages, contact.
+ */
+const { featured } = Astro.locals.site;
+---
+
+<Hero intoHall={featured.length > 0} />
+{featured.length > 0 && <ProjectShowcase projects={featured} />}
+<Services />
+<Contact />

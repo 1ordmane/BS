@@ -1,0 +1,25 @@
+---
+import { getContent } from '@/data';
+
+/**
+ * A company or project fact. Values the company has not filled in yet show a clearly
+ * marked placeholder instead of an invented value.
+ */
+interface Props {
+  value: string;
+  placeholder: string;
+}
+
+const { value, placeholder } = Astro.props;
+const { ui } = getContent(Astro.currentLocale);
+---
+
+{
+  value ? (
+    value
+  ) : (
+    <em class="placeholder" title={ui.placeholderTitle}>
+      {placeholder}
+    </em>
+  )
+}

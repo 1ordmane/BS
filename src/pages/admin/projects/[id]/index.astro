@@ -1,0 +1,110 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import ProjectForm from '@/components/admin/ProjectForm.astro';
+import Gallery from '@/components/admin/Gallery.astro';
+import Icon from '@/components/Icon.astro';
+import { formatDate } from '@/lib/format';
+import { getProject, listRevisions, publishProblems } from '@/server/projects';
+import { listProjectImages, toView } from '@/server/images';
+
+const id = Number(Astro.params.id);
+const project = Number.isInteger(id) ? getProject(id) : undefined;
+if (!project) return Astro.rewrite('/404');
+
+const images = listProjectImages(project.id).map((row) => ({ ...toView(row), position: row.position }));
+const revisions = listRevisions(project.id);
+const problems = publishProblems(project);
+const created = Astro.url.searchParams.has('created');
+---
+
+<AdminLayout title={project.title}>
+  <div class="admin-head">
+    <div>
+      <p class="crumbs"><a href="/admin/projects">← Все проекты</a></p>
+      <h1 data-project-heading>{project.title}</h1>
+    </div>
+    <div class="admin-head__actions">
+      <a class="button button--ghost" href={`/admin/projects/${project.id}/preview`} target="_blank" rel="noopener">
+        <Icon name="Eye" size={16} /> Предпросмотр
+      </a>
+    </div>
+  </div>
+
+  {created && <p class="notice notice--info" style="margin-bottom:1.5rem">Черновик создан. Теперь загрузите фотографии — первое фото станет обложкой.</p>}
+
+  <div
+    class="split"
+    data-project-editor
+    data-id={project.id}
+    data-version={project.version}
+    data-status={project.status}
+    data-slug={project.slug}
+  >
+    <div class="stack">
+      <ProjectForm project={project} />
+      <Gallery projectId={project.id} images={images} coverId={project.cover_image_id} />
+    </div>
+
+    <aside class="split__aside stack">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">Публикация</h2>
+          <span class={`badge badge--${project.status}`} data-status-badge>{project.status === 'published' ? 'Опубликован' : 'Черновик'}</span>
+        </div>
+        <dl class="facts">
+          <div><dt>Создан</dt><dd>{formatDate(project.created_at)}</dd></div>
+          <div><dt>Изменён</dt><dd data-updated>{formatDate(project.updated_at)}</dd></div>
+          <div><dt>Опубликован</dt><dd>{formatDate(project.published_at)}</dd></div>
+          <div>
+            <dt>Адрес</dt>
+            <dd>
+              <a href={`/projects/${project.slug}/`} target="_blank" rel="noopener" data-public-link hidden={project.status !== 'published'}>/projects/{project.slug}/</a>
+              <span data-public-hidden hidden={project.status === 'published'}>не опубликован</span>
+            </dd>
+          </div>
+        </dl>
+        <p class="notice" data-problems hidden={problems.length === 0 || project.status === 'published'} style="margin-top:1rem">
+          {problems.length ? `Чтобы опубликовать: ${problems.join('; ')}.` : ''}
+        </p>
+        <div class="stack" style="gap:.6rem;margin-top:1.25rem">
+          <button class="button button--primary" type="button" data-action="publish" hidden={project.status === 'published'}>Опубликовать</button>
+          <button class="button button--ghost" type="button" data-action="unpublish" hidden={project.status !== 'published'}>Снять с публикации</button>
+          <button class="button button--danger" type="button" data-action="delete">Удалить проект</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2 class="panel__title">История текстов</h2></div>
+        {
+          revisions.length === 0 ? (
+            <p class="muted">Предыдущие версии появятся после первого сохранения изменений.</p>
+          ) : (
+            <ul class="timeline-list" role="list">
+              {revisions.slice(0, 10).map((revision) => (
+                <li>
+                  <span>
+                    <time>{formatDate(revision.created_at)}</time>
+                    <br />
+                    <span class="muted">{revision.title}</span>
+                  </span>
+                  <button class="button button--ghost button--small" type="button" data-restore={revision.id}>
+                    Вернуть
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </section>
+    </aside>
+  </div>
+
+  <div class="savebar">
+    <span class="savebar__state" data-save-state data-clean-text="Все изменения сохранены">Все изменения сохранены</span>
+    <button class="button button--primary" type="button" data-action="save">Сохранить</button>
+  </div>
+</AdminLayout>
+
+<script>
+  import '@/scripts/admin/project-editor';
+</script>

@@ -1,0 +1,347 @@
+---
+import Icon from './Icon.astro';
+import ResponsiveImage from './ResponsiveImage.astro';
+import { getContent } from '@/data';
+import type { ProjectPageView } from '@/server/site';
+
+/** A project page. Used by the public route and by the admin preview of drafts. */
+interface Props {
+  view: ProjectPageView;
+}
+
+const { view } = Astro.props;
+const { project, cover, gallery, sections, scope, next } = view;
+const { projectsSection } = getContent(Astro.currentLocale);
+const labels = projectsSection.labels;
+
+// Only the facts filled in for this project; missing ones are left out rather than shown as gaps.
+const specs = [
+  { label: labels.format, value: view.categoryLabel },
+  { label: labels.client, value: project.client },
+  { label: labels.event, value: project.event },
+  { label: labels.location, value: project.location },
+  { label: labels.area, value: project.area ? `${project.area}${/\d$/.test(project.area) ? ' м²' : ''}` : '' },
+  { label: labels.year, value: project.year },
+].filter((spec) => spec.value);
+---
+
+  <article class="project">
+    <header class="project__head container">
+      <a class="project__back text-link" href="/projects/">{projectsSection.back}</a>
+      <div class="project__intro">
+        <h1 class="display display--md project__title">{project.title}</h1>
+        <p class="lead muted">{project.summary}</p>
+      </div>
+    </header>
+
+    <div class="container">
+      {
+        cover && (
+          <figure class="project__figure">
+            <ResponsiveImage image={cover} sizes="(min-width: 1400px) 1320px, 94vw" loading="eager" fetchpriority="high" />
+          </figure>
+        )
+      }
+
+      <dl class="project__specs">
+        {
+          specs.map((spec) => (
+            <div class="project__spec">
+              <dt class="label label--caps">{spec.label}</dt>
+              <dd>
+                {spec.value}
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+
+      <div class="project__body">
+        <div class="project__story">
+          {
+            sections.map((part) => (
+              <section class="project__part">
+                {part.heading && <h2 class="project__part-title">{part.heading}</h2>}
+                {part.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+              </section>
+            ))
+          }
+        </div>
+
+        <aside class="project__scope" aria-labelledby="scope-title">
+          <h2 class="project__part-title" id="scope-title">{labels.scope}</h2>
+          <ul role="list">
+            {
+              scope.map((item) => (
+                <li>
+                  <Icon name="Check" size={18} />
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <a class="button button--primary" href="/#contact" data-messenger>{projectsSection.cta}</a>
+        </aside>
+      </div>
+    </div>
+
+    {
+      gallery.length > 0 && (
+        <section class="project__gallery container" aria-label={labels.gallery}>
+          <ul role="list" class="project__gallery-grid">
+            {gallery.map((image) => (
+              <li>
+                <ResponsiveImage image={image} sizes="(min-width: 1000px) 640px, 94vw" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {next && (
+    <nav class="project__next" aria-label={projectsSection.next}>
+      <div class="container">
+        <a class="project__next-link" href={`/projects/${next.slug}/`}>
+          <span class="project__next-label">{projectsSection.next}</span>
+          <span class="project__next-title">{next.title}</span>
+          <span class="project__next-arrow" aria-hidden="true"><Icon name="ArrowRight" size={22} /></span>
+        </a>
+      </div>
+    </nav>
+    )}
+  </article>
+
+<style>
+  .project__head {
+    padding-top: clamp(5.5rem, 4rem + 4vw, 8rem);
+    padding-bottom: clamp(2.5rem, 2rem + 2vw, 4rem);
+  }
+
+  .project__intro {
+    display: grid;
+    gap: 1.75rem;
+    margin-top: 2.5rem;
+  }
+
+  @media (min-width: 1000px) {
+    .project__intro {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      align-items: end;
+      gap: 3rem;
+    }
+  }
+
+  .project__title {
+    color: var(--forest);
+  }
+
+  .project__figure {
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: var(--grey);
+    aspect-ratio: 16 / 9;
+  }
+
+  .project__figure img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: project-reveal 1.4s var(--ease-out) both;
+  }
+
+  @keyframes project-reveal {
+    from {
+      opacity: 0;
+      transform: scale(1.04);
+    }
+  }
+
+  /* Specifications laid out like the title block of a drawing sheet */
+  .project__specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    margin-top: 2rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .project__spec {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1.1rem 1.25rem;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin: 0 -1px -1px 0;
+  }
+
+  .project__spec dt {
+    color: var(--muted);
+  }
+
+  .project__spec dd {
+    font-weight: 500;
+    color: var(--forest);
+  }
+
+  .project__note {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-top: 1.5rem;
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  .project__note :global(.icon) {
+    flex-shrink: 0;
+    margin-top: 0.2em;
+    color: var(--emerald);
+  }
+
+  .project__body {
+    display: grid;
+    gap: 3rem;
+    padding-block: clamp(4rem, 3rem + 4vw, 7rem);
+  }
+
+  @media (min-width: 1000px) {
+    .project__body {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+      gap: clamp(3rem, 2rem + 4vw, 7rem);
+      align-items: start;
+    }
+
+    .project__scope {
+      position: sticky;
+      top: calc(var(--header-h) + 3rem);
+    }
+  }
+
+  .project__story {
+    display: grid;
+    gap: 2.75rem;
+  }
+
+  .project__part {
+    display: grid;
+    gap: 0.85rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .project__part p {
+    max-width: var(--measure);
+    font-size: var(--text-lg);
+    line-height: 1.55;
+  }
+
+  .project__part-title {
+    font-family: var(--font-display);
+    font-size: var(--display-sm);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+    color: var(--forest);
+  }
+
+  .project__scope {
+    display: grid;
+    gap: 1.5rem;
+    padding: clamp(1.5rem, 1rem + 1.5vw, 2.5rem);
+    border-radius: var(--radius-md);
+    background: #fff;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .project__scope ul {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .project__scope li {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .project__scope li :global(.icon) {
+    flex-shrink: 0;
+    margin-top: 0.2em;
+    color: var(--emerald);
+  }
+
+  .project__scope .button {
+    justify-self: start;
+    white-space: normal;
+  }
+
+  .project__gallery {
+    padding-bottom: clamp(4rem, 3rem + 4vw, 7rem);
+  }
+
+  .project__gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+    gap: clamp(1rem, 0.6rem + 1vw, 1.5rem);
+  }
+
+  .project__gallery-grid img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    background: var(--grey);
+  }
+
+  .project__next {
+    background: var(--forest);
+    color: var(--on-dark);
+  }
+
+  .project__next-link {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.5rem 2rem;
+    padding-block: clamp(3rem, 2rem + 3vw, 5rem);
+    text-decoration: none;
+  }
+
+  .project__next-label {
+    grid-column: 1;
+    font-size: var(--text-sm);
+    color: var(--on-dark-muted);
+  }
+
+  .project__next-title {
+    grid-column: 1;
+    font-family: var(--font-display);
+    font-size: var(--display-md);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-display);
+    color: #fff;
+  }
+
+  .project__next-arrow {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border: 1px solid var(--line-on-dark);
+    border-radius: 50%;
+    transition:
+      background-color 0.35s var(--ease),
+      transform 0.35s var(--ease);
+  }
+
+  .project__next-link:hover .project__next-arrow {
+    background: var(--emerald);
+    transform: translateX(6px);
+  }
+</style>

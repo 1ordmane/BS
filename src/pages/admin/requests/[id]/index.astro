@@ -1,0 +1,106 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { formatBytes, formatDate } from '@/lib/format';
+import { NotFoundError } from '@/server/errors';
+import { STATUSES, STATUS_LABELS, getInquiry, type InquiryRow } from '@/server/inquiries';
+
+let inquiry: InquiryRow;
+try {
+  inquiry = getInquiry(Number(Astro.params.id));
+} catch (error) {
+  if (error instanceof NotFoundError) return Astro.rewrite('/404');
+  throw error;
+}
+---
+
+<AdminLayout title={`Заявка: ${inquiry.name}`}>
+  <div class="admin-head">
+    <div>
+      <p class="crumbs"><a href="/admin/requests">← Все заявки</a></p>
+      <h1>{inquiry.name}</h1>
+      <p>{formatDate(inquiry.created_at)}</p>
+    </div>
+  </div>
+
+  <div class="split">
+    <section class="panel">
+      <dl class="facts" style="gap:.9rem">
+        <div><dt>Компания</dt><dd>{inquiry.company || '—'}</dd></div>
+        <div><dt>Почта</dt><dd><a href={`mailto:${inquiry.email}`}>{inquiry.email}</a></dd></div>
+        <div><dt>Телефон или мессенджер</dt><dd>{inquiry.phone || '—'}</dd></div>
+        <div><dt>Выставка или событие</dt><dd>{inquiry.event || '—'}</dd></div>
+        <div><dt>Площадь</dt><dd>{inquiry.area ? `${inquiry.area} м²` : '—'}</dd></div>
+        <div><dt>Страница отправки</dt><dd>{inquiry.page || '—'}</dd></div>
+        <div>
+          <dt>Вложение</dt>
+          <dd>
+            {
+              inquiry.attachment_file ? (
+                <a href={`/admin/requests/${inquiry.id}/attachment`}>
+                  {inquiry.attachment_name} ({formatBytes(inquiry.attachment_size ?? 0)})
+                </a>
+              ) : (
+                '—'
+              )
+            }
+          </dd>
+        </div>
+      </dl>
+      <h2 class="panel__title" style="margin:1.5rem 0 .5rem">Описание проекта</h2>
+      <p style="white-space:pre-wrap">{inquiry.message}</p>
+      {inquiry.attachment_file && <p class="field__hint" style="margin-top:1rem">Вложение скачивается как файл. Открывайте вложения от незнакомых отправителей с осторожностью.</p>}
+    </section>
+
+    <aside class="split__aside">
+      <form class="panel stack" style="gap:1rem" data-request-form data-id={inquiry.id} novalidate>
+        <div class="field">
+          <label for="rq-status">Статус</label>
+          <select id="rq-status" name="status">
+            {STATUSES.map((s) => <option value={s} selected={inquiry.status === s}>{STATUS_LABELS[s]}</option>)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="rq-notes">Внутренние заметки</label>
+          <textarea id="rq-notes" name="notes" rows="6" placeholder="Видны только в админ-панели">{inquiry.notes}</textarea>
+          <p class="field__error" data-error-for="notes"></p>
+        </div>
+        <span class="savebar__state" data-save-state data-clean-text={`Изменено ${formatDate(inquiry.updated_at)}`}></span>
+        <button class="button button--primary" type="submit">Сохранить</button>
+        <button class="button button--danger" type="button" data-request-delete>Удалить заявку</button>
+      </form>
+    </aside>
+  </div>
+</AdminLayout>
+
+<script>
+  import { api, confirmDialog, serialize, showErrors, toast, trackChanges } from '@/scripts/admin/core';
+
+  const form = document.querySelector<HTMLFormElement>('[data-request-form]');
+  if (form) {
+    const id = form.dataset.id;
+    const changes = trackChanges(form, form.querySelector('[data-save-state]'));
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const result = await api('PUT', `/api/admin/requests/${id}`, serialize(form));
+      if (!result.ok) {
+        showErrors(form, result.fields);
+        return toast(result.error ?? 'Не сохранено', 'error');
+      }
+      changes.markSaved();
+      toast('Сохранено');
+    });
+    form.querySelector('[data-request-delete]')!.addEventListener('click', async () => {
+      const go = await confirmDialog({
+        title: 'Удалить заявку?',
+        text: 'Заявка и её вложение будут удалены без возможности восстановления (кроме резервной копии). Для спама можно выбрать статус «Спам».',
+        confirm: 'Удалить',
+        danger: true,
+      });
+      if (!go) return;
+      const result = await api('DELETE', `/api/admin/requests/${id}`);
+      if (!result.ok) return toast(result.error ?? 'Не удалено', 'error');
+      changes.markSaved();
+      window.location.assign('/admin/requests');
+    });
+  }
+</script>

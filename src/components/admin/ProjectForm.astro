@@ -1,0 +1,123 @@
+---
+import { ru } from '@/data/ru';
+import type { ProjectRow } from '@/server/projects';
+
+/** The project's text fields. Images are managed separately and never reload this form. */
+interface Props {
+  project?: ProjectRow;
+}
+
+const { project } = Astro.props;
+const value = (key: keyof ProjectRow) => (project ? String(project[key] ?? '') : '');
+---
+
+<form class="stack" data-project-form novalidate>
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Основное</h2></div>
+    <div class="form-grid form-grid--2">
+      <div class="field field--wide">
+        <label for="p-title">Название</label>
+        <input id="p-title" name="title" type="text" required data-max="140" value={value('title')} />
+        <p class="field__error" data-error-for="title"></p>
+      </div>
+      <div class="field">
+        <label for="p-slug">Адрес страницы</label>
+        <input id="p-slug" name="slug" type="text" data-max="80" value={value('slug')} placeholder="заполнится из названия" pattern="[a-z0-9-]+" />
+        <p class="field__hint">Латиница, цифры и дефисы: /projects/<b data-slug-preview>{value('slug') || '…'}</b>/. Старый адрес опубликованного проекта будет перенаправлять на новый.</p>
+        <p class="field__error" data-error-for="slug"></p>
+      </div>
+      <div class="field">
+        <label for="p-category">Формат</label>
+        <select id="p-category" name="category">
+          {ru.projectCategories.map((c) => <option value={c.id} selected={value('category') === c.id}>{c.label}</option>)}
+        </select>
+        <p class="field__error" data-error-for="category"></p>
+      </div>
+      <div class="field field--wide">
+        <label for="p-summary">Краткое описание</label>
+        <textarea id="p-summary" name="summary" rows="2" data-max="300">{value('summary')}</textarea>
+        <p class="field__hint">Одно-два предложения под заголовком страницы проекта. Нужно для публикации.</p>
+        <p class="field__error" data-error-for="summary"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Описание</h2>
+      <p class="panel__hint">Абзацы разделяйте пустой строкой. Строка, начинающаяся с «## », станет подзаголовком.</p>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="p-description">Текст страницы проекта</label>
+        <textarea id="p-description" name="description" class="tall" data-max="10000">{value('description')}</textarea>
+        <p class="field__error" data-error-for="description"></p>
+      </div>
+      <div class="field">
+        <label for="p-scope">Что входило в работу</label>
+        <textarea id="p-scope" name="scope" rows="4" data-max="2000" placeholder="Каждый пункт с новой строки">{value('scope')}</textarea>
+        <p class="field__error" data-error-for="scope"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Детали</h2>
+      <p class="panel__hint">Пустые поля показываются на сайте пунктирной заглушкой, а не придуманным значением.</p>
+    </div>
+    <div class="form-grid form-grid--3">
+      <div class="field">
+        <label for="p-client">Клиент или бренд</label>
+        <input id="p-client" name="client" type="text" data-max="120" value={value('client')} />
+        <p class="field__error" data-error-for="client"></p>
+      </div>
+      <div class="field">
+        <label for="p-event">Выставка или событие</label>
+        <input id="p-event" name="event" type="text" data-max="160" value={value('event')} />
+        <p class="field__error" data-error-for="event"></p>
+      </div>
+      <div class="field">
+        <label for="p-location">Город</label>
+        <input id="p-location" name="location" type="text" data-max="120" value={value('location')} />
+        <p class="field__error" data-error-for="location"></p>
+      </div>
+      <div class="field">
+        <label for="p-area">Площадь стенда, м²</label>
+        <input id="p-area" name="area" type="text" inputmode="decimal" data-max="40" value={value('area')} />
+        <p class="field__error" data-error-for="area"></p>
+      </div>
+      <div class="field">
+        <label for="p-year">Год</label>
+        <input id="p-year" name="year" type="text" inputmode="numeric" data-max="20" value={value('year')} />
+        <p class="field__error" data-error-for="year"></p>
+      </div>
+      <div class="field">
+        <span class="field__label">Пометка</span>
+        <label class="check">
+          <input type="checkbox" name="illustrative" checked={project ? project.illustrative === 1 : false} />
+          <span>Пример формата (иллюстрация, а не реальный кейс)</span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Поисковые системы и соцсети</h2>
+      <p class="panel__hint">Если оставить пустым, возьмутся название и краткое описание.</p>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="p-seo-title">Заголовок страницы (title)</label>
+        <input id="p-seo-title" name="seo_title" type="text" data-max="120" value={value('seo_title')} />
+        <p class="field__error" data-error-for="seo_title"></p>
+      </div>
+      <div class="field">
+        <label for="p-seo-description">Описание (meta description)</label>
+        <textarea id="p-seo-description" name="seo_description" rows="2" data-max="300">{value('seo_description')}</textarea>
+        <p class="field__error" data-error-for="seo_description"></p>
+      </div>
+    </div>
+  </section>
+</form>

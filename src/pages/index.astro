@@ -1,0 +1,11 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HomeSections from '@/components/HomeSections.astro';
+
+// Astro.locals.site holds the published content (or the drafts, when previewed from the admin panel).
+const { homepage, images } = Astro.locals.site;
+---
+
+<BaseLayout title={homepage.seo.title} description={homepage.seo.description} ogImage={images.hero?.og}>
+  <HomeSections />
+</BaseLayout>

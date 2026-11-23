@@ -1,0 +1,78 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import DocAside from '@/components/admin/DocAside.astro';
+import Repeater from '@/components/admin/Repeater.astro';
+import { getDraft } from '@/server/content';
+
+const draft = getDraft('about');
+const { about, approach, why } = draft.doc;
+---
+
+<AdminLayout title="Подход и преимущества">
+  <div class="admin-head">
+    <div>
+      <h1>Подход и преимущества</h1>
+      <p>Разделы главной страницы «Наш подход» и «Почему мы» (в меню сайта — «О компании»).</p>
+    </div>
+  </div>
+
+  <p class="notice notice--info" style="margin-bottom:1.5rem">
+    Пишите только то, что компания может подтвердить. Не добавляйте награды, сертификаты, имена клиентов и цифры без подтверждения.
+  </p>
+
+  <div class="split">
+    <form class="stack" data-doc-form data-doc-key="about" data-version={draft.version} novalidate>
+      {/* The former "О компании" homepage block was replaced by the project gallery. Its stored
+          texts and images are kept (hidden fields), so saving this page does not erase them. */}
+      <input type="hidden" name="about.title" value={about.title} />
+      <input type="hidden" name="about.lead" value={about.lead} />
+      <input type="hidden" name="about.mainImageId" value={about.mainImageId ?? ''} />
+      <input type="hidden" name="about.mainAlt" value={about.mainAlt} />
+      <input type="hidden" name="about.secondaryImageId" value={about.secondaryImageId ?? ''} />
+      <input type="hidden" name="about.secondaryAlt" value={about.secondaryAlt} />
+
+      <section class="panel">
+        <div class="panel__head"><h2 class="panel__title">Наш подход</h2></div>
+        <div class="form-grid form-grid--2" style="margin-bottom:1rem">
+          <div class="field">
+            <label for="ap-title">Заголовок</label>
+            <input id="ap-title" type="text" name="approach.title" value={approach.title} data-max="80" />
+            <p class="field__error" data-error-for="approach.title"></p>
+          </div>
+          <div class="field">
+            <label for="ap-text">Подзаголовок</label>
+            <input id="ap-text" type="text" name="approach.text" value={approach.text} data-max="200" />
+          </div>
+        </div>
+        <Repeater name="approach.stages" items={approach.stages} min={3} max={6} itemLabel="Этап" titleMax={40} textMax={120} numbered />
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2 class="panel__title">Почему мы</h2></div>
+        <div class="form-grid form-grid--2" style="margin-bottom:1rem">
+          <div class="field">
+            <label for="w-title">Заголовок</label>
+            <input id="w-title" type="text" name="why.title" value={why.title} data-max="80" />
+            <p class="field__error" data-error-for="why.title"></p>
+          </div>
+          <div class="field">
+            <label for="w-text">Подзаголовок</label>
+            <input id="w-text" type="text" name="why.text" value={why.text} data-max="200" />
+          </div>
+        </div>
+        <Repeater name="why.principles" items={why.principles} min={2} max={6} itemLabel="Пункт" titleMax={60} textMax={160} />
+      </section>
+    </form>
+
+    <DocAside docKey="about" preview="/admin/preview#approach" />
+  </div>
+
+  <div class="savebar">
+    <span class="savebar__state" data-save-state data-clean-text="Черновик сохранён">Черновик сохранён</span>
+    <button class="button button--primary" type="button" data-doc-save>Сохранить черновик</button>
+  </div>
+</AdminLayout>
+
+<script>
+  import '@/scripts/admin/doc-editor';
+</script>

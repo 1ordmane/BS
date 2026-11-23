@@ -1,0 +1,577 @@
+---
+import Icon from './Icon.astro';
+import ResponsiveImage from './ResponsiveImage.astro';
+import { getContent } from '@/data';
+import { getProject } from '@/server/projects';
+import { publishedCards, type ProjectCardView } from '@/server/site';
+
+/**
+ * The project hall: the homepage's main section. The projects selected in the admin panel
+ * (Главная страница → Проекты на главной), in that order.
+ *
+ * Wide screens: a large stage with the chosen project's photo and an index of all projects
+ * beside it (a tab list; arrow keys move through it). Narrow screens: a row of project
+ * cards to swipe through. Either way, a project opens in a window with its photos and
+ * details, without leaving the page; the window links on to the full project page.
+ * Without JavaScript every project is a plain link to its page.
+ */
+interface Props {
+  projects: ProjectCardView[];
+}
+
+const { projects } = Astro.props;
+const { projectsSection: labels } = getContent(Astro.currentLocale);
+const section = Astro.locals.site.homepage.projects;
+const viewer = labels.viewer;
+// The whole catalogue, not just the projects picked for the homepage.
+const allCount = publishedCards().length;
+
+// The project window itself is ProjectDialog (in the page layout); here only the summaries.
+const items = projects.map((card) => ({ card, summary: getProject(card.id)?.summary ?? '' }));
+---
+
+<section class="works" id="projects" aria-labelledby="works-title">
+  <div class="container">
+    <div class="works__head">
+      <h2 class="works__title" id="works-title">{section.title}</h2>
+      {section.text && <p class="works__lead">{section.text}</p>}
+    </div>
+
+    <div class="works__layout" data-works>
+      <div class="works__side">
+        <div class="works__index" role="tablist" aria-label={viewer.listLabel} aria-orientation="vertical" data-works-tabs>
+          {
+            items.map(({ card }, index) => (
+              <button
+                class="works__tab"
+                type="button"
+                role="tab"
+                id={`work-tab-${index}`}
+                aria-controls={`work-${index}`}
+                aria-selected={index === 0 ? 'true' : 'false'}
+                tabindex={index === 0 ? 0 : -1}
+                data-tab={index}
+              >
+                <span class="works__tab-title">{card.title}</span>
+                <span class="works__tab-format">{card.categoryLabel}</span>
+              </button>
+            ))
+          }
+        </div>
+
+        <a class="works__all" href="/projects/" data-portfolio-open>
+          <span>{labels.allProjects}</span>
+          <span class="works__all-count">{allCount}</span>
+          <Icon name="ArrowRight" size={20} />
+        </a>
+      </div>
+
+      <div class="works__stage" data-works-stage>
+        {
+          items.map(({ card, summary }, index) => (
+            <article
+              class:list={['works__panel', { 'is-active': index === 0 }]}
+              id={`work-${index}`}
+              role="tabpanel"
+              aria-labelledby={`work-tab-${index}`}
+              data-panel={index}
+            >
+              <a class="work" href={`/projects/${card.slug}/`} data-work-open={card.slug}>
+                <span class="work__media">
+                  <ResponsiveImage
+                    image={card.cover}
+                    sizes="(min-width: 1400px) 880px, (min-width: 1000px) 64vw, (min-width: 600px) 30rem, 84vw"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                  />
+                </span>
+                <span class="visually-hidden">{card.title}</span>
+              </a>
+              <div class="work__caption">
+                <p class="work__format">{card.categoryLabel}</p>
+                <h3 class="work__title">{card.title}</h3>
+                {summary && <p class="work__summary">{summary}</p>}
+                <button class="work__more" type="button" data-work-open={card.slug} aria-haspopup="dialog">
+                  {viewer.details}
+                  <Icon name="ArrowUpRight" size={18} />
+                </button>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<style>
+  .works {
+    background: var(--hall);
+    color: var(--on-dark);
+    /* The hero photo reaches into this section from above */
+    padding-top: calc(var(--hero-overlap) + clamp(2.5rem, 1.5rem + 3vw, 4.5rem));
+    padding-bottom: clamp(3rem, 2rem + 3vw, 5rem);
+  }
+
+  .works__head {
+    display: grid;
+    gap: 1rem 3rem;
+    margin-bottom: clamp(1.5rem, 1rem + 1.5vw, 2.5rem);
+  }
+
+  @media (min-width: 1000px) {
+    .works__head {
+      grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+      align-items: end;
+      gap: clamp(2rem, 1rem + 3vw, 4.5rem);
+    }
+  }
+
+  .works__title {
+    font-family: var(--font-display);
+    font-size: var(--display-md);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-display);
+    color: #fff;
+  }
+
+  .works__lead {
+    max-width: 24rem;
+    color: var(--on-dark-muted);
+    text-wrap: pretty;
+  }
+
+  /* ---------- Index (wide screens with JavaScript) ---------- */
+
+  /* Phones and pages without JavaScript: the projects first, then the button under them. */
+  .works__layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .works__side {
+    order: 2;
+    margin-top: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  }
+
+  .works__index {
+    display: none;
+  }
+
+  .works__tab {
+    position: relative;
+    display: grid;
+    gap: 0.3rem;
+    width: 100%;
+    padding: 1.05rem 0 1.05rem 1.5rem;
+    border: 0;
+    border-top: 1px solid var(--line-on-dark);
+    background: none;
+    color: var(--on-dark-muted);
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.3s var(--ease);
+  }
+
+  .works__tab:last-child {
+    border-bottom: 1px solid var(--line-on-dark);
+  }
+
+  /* The chosen project is marked like a lit stand: a bar of brand green along its edge. */
+  .works__tab::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.05rem;
+    bottom: 1.05rem;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--mint);
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.45s var(--ease-out);
+  }
+
+  .works__tab:hover,
+  .works__tab[aria-selected='true'] {
+    color: #fff;
+  }
+
+  .works__tab[aria-selected='true']::before {
+    transform: none;
+  }
+
+  .works__tab:focus-visible {
+    outline-color: var(--mint);
+    outline-offset: -2px;
+  }
+
+  .works__tab-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 1rem + 0.5vw, 1.5rem);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+  }
+
+  .works__tab-format {
+    font-size: var(--text-xs);
+    color: var(--on-dark-muted);
+  }
+
+  /* ---------- Project panels ---------- */
+
+  /* Positioned so the visually hidden title inside stays within the swipe row on phones
+     instead of widening the page. */
+  .work {
+    position: relative;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+  }
+
+  .work:focus-visible {
+    outline-color: var(--mint);
+    outline-offset: 4px;
+  }
+
+  .work__media {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--hall-deep);
+    aspect-ratio: 3 / 2;
+  }
+
+  .work__media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.9s var(--ease-out);
+  }
+
+  .work:hover .work__media :global(img) {
+    transform: scale(1.025);
+  }
+
+  .work__badge {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    background: rgb(233 231 231 / 0.92);
+    color: var(--forest);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-ui);
+  }
+
+  .work__caption {
+    position: relative;
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 1.25rem;
+  }
+
+  .work__format {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-ui);
+    color: var(--mint);
+  }
+
+  .work__title {
+    font-family: var(--font-display);
+    font-size: var(--title-md);
+    font-weight: var(--weight-title);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+    color: #fff;
+    text-wrap: balance;
+  }
+
+  .work__summary {
+    max-width: 38rem;
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--on-dark-muted);
+    text-wrap: pretty;
+  }
+
+  /* Opens the detail window, so it only exists when JavaScript runs. */
+  .work__more {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    justify-self: start;
+    margin-top: 0.35rem;
+    padding: 0.5rem 0;
+    border: 0;
+    border-bottom: 1px solid rgb(243 241 234 / 0.4);
+    background: none;
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    cursor: pointer;
+    transition: border-color 0.25s var(--ease);
+  }
+
+  .work__more:hover {
+    border-color: #fff;
+  }
+
+  .work__more:focus-visible {
+    outline-color: var(--mint);
+  }
+
+  :global(.js) .work__more {
+    display: inline-flex;
+  }
+
+  /* Narrow screens: a row of cards to swipe through; the next one peeks in. */
+  @media (max-width: 999px) {
+    .works__stage {
+      display: flex;
+      gap: 1rem;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      padding-bottom: 0.5rem;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .works__stage::-webkit-scrollbar {
+      display: none;
+    }
+
+    .works__panel {
+      flex: 0 0 min(84%, 30rem);
+      scroll-snap-align: start;
+    }
+
+    .work__media {
+      aspect-ratio: 4 / 3;
+    }
+
+    .work__summary {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+
+  /* Wide screens without JavaScript: all projects in two columns. */
+  @media (min-width: 1000px) {
+    .works__stage {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 3rem 2rem;
+    }
+
+    /* With JavaScript: the stage shows one project at a time, the index sits beside it. */
+    :global(.js) .works__layout {
+      display: grid;
+      grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+      align-items: start;
+      gap: clamp(2rem, 1rem + 3vw, 4.5rem);
+    }
+
+    /* The index and, right under it, the way into the whole catalogue. */
+    :global(.js) .works__side {
+      display: grid;
+      gap: 1.75rem;
+      grid-column: 2;
+      grid-row: 1;
+      margin-top: 0;
+    }
+
+    :global(.js) .works__index {
+      display: block;
+    }
+
+    :global(.js) .works__stage {
+      grid-column: 1;
+      grid-row: 1;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* A little wider than tall photos keep the section to about one screen. */
+    :global(.js) .work__media {
+      aspect-ratio: 16 / 10;
+    }
+
+    :global(.js) .works__panel {
+      grid-area: 1 / 1;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 0.45s var(--ease),
+        visibility 0s linear 0.45s;
+    }
+
+    :global(.js) .works__panel.is-active {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.45s var(--ease);
+    }
+
+    /* The index already names the project; the caption carries format, summary and the action. */
+    :global(.js) .work__title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    :global(.js) .work__caption {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      column-gap: 3rem;
+    }
+
+    :global(.js) .work__format,
+    :global(.js) .work__summary {
+      grid-column: 1;
+    }
+
+    :global(.js) .work__more {
+      grid-column: 2;
+      grid-row: 1 / span 3;
+      margin-top: 0;
+    }
+  }
+
+  /* ---------- «Все проекты»: the way into the whole catalogue ---------- */
+
+  /* A filled bar in the brand's light green: the one solid shape on the dark hall. */
+  .works__all {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 64px;
+    padding: 0 1.5rem;
+    border-radius: 999px;
+    background: var(--mint);
+    color: var(--forest-deep);
+    font-family: var(--font-display);
+    font-size: clamp(1.1875rem, 1rem + 0.5vw, 1.375rem);
+    font-weight: var(--weight-display);
+    letter-spacing: var(--tracking-title);
+    text-decoration: none;
+    transition: background-color 0.25s var(--ease);
+  }
+
+  /* How many projects the catalogue holds */
+  .works__all-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2rem;
+    height: 2rem;
+    margin-left: auto;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    background: rgb(13 48 40 / 0.12);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    line-height: 1;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .works__all :global(svg) {
+    flex-shrink: 0;
+    transition: transform 0.25s var(--ease);
+  }
+
+  .works__all:hover {
+    background: #fff;
+  }
+
+  .works__all:hover :global(svg) {
+    transform: translateX(3px);
+  }
+
+  .works__all:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+
+  @media (min-width: 600px) and (max-width: 999px) {
+    .works__all {
+      width: min(100%, 24rem);
+    }
+  }
+
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-works]');
+
+  if (root) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
+    const wide = window.matchMedia('(min-width: 1000px)');
+
+    // Hidden panels on the wide layout must not be reachable with Tab.
+    const syncInert = () => {
+      panels.forEach((panel) => (panel.inert = wide.matches && !panel.classList.contains('is-active')));
+    };
+
+    const select = (index: number, focus = false) => {
+      tabs.forEach((tab, i) => {
+        const selected = i === index;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+      });
+      panels.forEach((panel, i) => panel.classList.toggle('is-active', i === index));
+      syncInert();
+      if (focus) tabs[index]?.focus();
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => select(index));
+
+      // With a mouse, pointing at a project is enough to show it; a short pause avoids
+      // flicking through every project on the way across the list.
+      let timer = 0;
+      tab.addEventListener('pointerenter', (event) => {
+        if (event.pointerType !== 'mouse') return;
+        timer = window.setTimeout(() => select(index), 90);
+      });
+      tab.addEventListener('pointerleave', () => window.clearTimeout(timer));
+    });
+
+    root.querySelector('[data-works-tabs]')?.addEventListener('keydown', (event) => {
+      const key = (event as KeyboardEvent).key;
+      const current = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true');
+      const last = tabs.length - 1;
+      const next =
+        key === 'ArrowDown' || key === 'ArrowRight'
+          ? current === last ? 0 : current + 1
+          : key === 'ArrowUp' || key === 'ArrowLeft'
+            ? current === 0 ? last : current - 1
+            : key === 'Home'
+              ? 0
+              : key === 'End'
+                ? last
+                : -1;
+      if (next < 0) return;
+      event.preventDefault();
+      select(next, true);
+    });
+
+    wide.addEventListener('change', syncInert);
+    syncInert();
+  }
+
+</script>

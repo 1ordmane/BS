@@ -1,0 +1,37 @@
+---
+/** A strip over previews of unpublished content, so a preview is never mistaken for the live site. */
+interface Props {
+  text: string;
+  back: string;
+}
+
+const { text, back } = Astro.props;
+---
+
+<div class="preview-bar" role="note">
+  <strong>Предпросмотр</strong>
+  <span>{text}</span>
+  <a href={back}>← Вернуться к редактированию</a>
+</div>
+
+<style>
+  .preview-bar {
+    position: relative;
+    z-index: 101;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    align-items: center;
+    padding: 0.6rem var(--gutter);
+    background: #fdf1d8;
+    color: #5c3d00;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #e9cf94;
+  }
+
+  .preview-bar a {
+    margin-left: auto;
+    color: inherit;
+    font-weight: 600;
+  }
+</style>

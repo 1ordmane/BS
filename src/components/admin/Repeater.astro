@@ -1,0 +1,76 @@
+---
+/** An editable list of { title, text } items with add, remove and reorder (see doc-editor.ts). */
+interface Props {
+  name: string;
+  items: { title: string; text: string }[];
+  min: number;
+  max: number;
+  itemLabel: string;
+  titleMax: number;
+  textMax: number;
+  numbered?: boolean;
+}
+
+const { name, items, min, max, itemLabel, titleMax, textMax, numbered = false } = Astro.props;
+---
+
+<div data-repeater={name} data-repeat-min={min} data-repeat-max={max}>
+  <ol class="picklist" role="list" data-repeat-list>
+    {
+      items.map((item, index) => (
+        <li class="panel" style="padding:1rem" data-repeat-item>
+          <div class="panel__head" style="margin-bottom:.75rem">
+            <strong>
+              {itemLabel} {numbered ? <span data-repeat-number>{String(index + 1).padStart(2, '0')}</span> : <span data-repeat-number>{index + 1}</span>}
+            </strong>
+            <span class="pick__tools">
+              <button type="button" class="icon-button" data-repeat-up aria-label="Выше">↑</button>
+              <button type="button" class="icon-button" data-repeat-down aria-label="Ниже">↓</button>
+              <button type="button" class="icon-button icon-button--danger" data-repeat-remove aria-label="Удалить">✕</button>
+            </span>
+          </div>
+          <div class="form-grid form-grid--2">
+            <div class="field">
+              <label>
+                Заголовок
+                <input type="text" name={`${name}.${index}.title`} value={item.title} maxlength={titleMax} />
+              </label>
+              <p class="field__error" data-error-for={`${name}.${index}.title`} />
+            </div>
+            <div class="field">
+              <label>
+                Текст
+                <input type="text" name={`${name}.${index}.text`} value={item.text} maxlength={textMax} />
+              </label>
+              <p class="field__error" data-error-for={`${name}.${index}.text`} />
+            </div>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+  <template>
+    <li class="panel" style="padding:1rem" data-repeat-item>
+      <div class="panel__head" style="margin-bottom:.75rem">
+        <strong>{itemLabel} <span data-repeat-number></span></strong>
+        <span class="pick__tools">
+          <button type="button" class="icon-button" data-repeat-up aria-label="Выше">↑</button>
+          <button type="button" class="icon-button" data-repeat-down aria-label="Ниже">↓</button>
+          <button type="button" class="icon-button icon-button--danger" data-repeat-remove aria-label="Удалить">✕</button>
+        </span>
+      </div>
+      <div class="form-grid form-grid--2">
+        <div class="field">
+          <label>Заголовок <input type="text" name={`${name}.__i__.title`} value="" maxlength={titleMax} /></label>
+          <p class="field__error" data-error-for={`${name}.__i__.title`}></p>
+        </div>
+        <div class="field">
+          <label>Текст <input type="text" name={`${name}.__i__.text`} value="" maxlength={textMax} /></label>
+          <p class="field__error" data-error-for={`${name}.__i__.text`}></p>
+        </div>
+      </div>
+    </li>
+  </template>
+  <button class="button button--ghost button--small" type="button" data-repeat-add style="margin-top:.75rem">+ Добавить</button>
+  <p class="field__hint">От {min} до {max}.</p>
+</div>

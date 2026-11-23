@@ -1,0 +1,190 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { operator } from '@/data/legal';
+
+/** Layout of the legal pages (privacy policy, consent): a readable column with a table of contents. */
+interface Props {
+  title: string;
+  metaTitle: string;
+  description: string;
+  lead?: string;
+  /** Section anchors for the table of contents. */
+  toc?: { id: string; title: string }[];
+}
+
+const { title, metaTitle, description, lead, toc = [] } = Astro.props;
+---
+
+<BaseLayout title={metaTitle} description={description}>
+  <article class="legal container">
+    <header class="legal__head">
+      <h1 class="legal__title">{title}</h1>
+      {lead && <p class="legal__lead">{lead}</p>}
+      {operator.edition && <p class="legal__edition">Редакция от {operator.edition}</p>}
+    </header>
+
+    {
+      toc.length > 0 && (
+        <nav class="legal__toc" aria-labelledby="legal-toc-title">
+          <h2 class="legal__toc-title" id="legal-toc-title">Содержание</h2>
+          <ol>
+            {toc.map((item) => (
+              <li>
+                <a href={`#${item.id}`}>{item.title}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )
+    }
+
+    <div class="legal__body">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal {
+    max-width: calc(50rem + var(--gutter) * 2);
+    padding-top: clamp(5.5rem, 3.5rem + 5vw, 8.5rem);
+    padding-bottom: clamp(4rem, 3rem + 4vw, 7rem);
+  }
+
+  .legal__title {
+    font-family: var(--font-display);
+    font-size: var(--display-md);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-display);
+    color: var(--forest);
+    text-wrap: balance;
+  }
+
+  .legal__lead {
+    max-width: 40rem;
+    margin-top: 1.25rem;
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--charcoal);
+  }
+
+  .legal__edition {
+    margin-top: 1rem;
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  .legal__toc {
+    margin-top: 2.5rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 8px;
+    background: var(--paper-raised);
+  }
+
+  .legal__toc-title {
+    margin-bottom: 0.75rem;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--forest);
+  }
+
+  .legal__toc ol {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+    padding-left: 1.4rem;
+    font-size: var(--text-sm);
+  }
+
+  .legal__toc a {
+    display: inline-block;
+    padding-block: 0.3rem;
+    color: var(--forest);
+  }
+
+  .legal__body {
+    margin-top: 1rem;
+  }
+
+  /* Sections and text inside the slot */
+  .legal__body :global(section) {
+    margin-top: 2.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line-strong);
+    scroll-margin-top: calc(var(--header-h) + 3rem);
+  }
+
+  .legal__body :global(h2) {
+    margin-bottom: 1rem;
+    font-family: var(--font-display);
+    font-size: var(--title-lg);
+    font-weight: var(--weight-title);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+    color: var(--forest);
+  }
+
+  .legal__body :global(h3) {
+    margin: 1.5rem 0 0.5rem;
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--forest);
+  }
+
+  .legal__body :global(p),
+  .legal__body :global(li) {
+    max-width: 44rem;
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  .legal__body :global(p + p),
+  .legal__body :global(p + ul),
+  .legal__body :global(ul + p),
+  .legal__body :global(p + ol),
+  .legal__body :global(ol + p),
+  .legal__body :global(dl + p),
+  .legal__body :global(p + dl) {
+    margin-top: 0.85rem;
+  }
+
+  .legal__body :global(ul),
+  .legal__body :global(ol) {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding-left: 1.4rem;
+  }
+
+  .legal__body :global(dl) {
+    display: grid;
+    gap: 0.6rem;
+    max-width: 44rem;
+  }
+
+  .legal__body :global(dl div) {
+    display: grid;
+    grid-template-columns: minmax(9rem, 14rem) minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .legal__body :global(dt) {
+    color: var(--muted);
+  }
+
+  .legal__body :global(dd) {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 560px) {
+    .legal__body :global(dl div) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.1rem;
+    }
+  }
+
+  .legal__body :global(a) {
+    color: var(--forest);
+  }
+</style>

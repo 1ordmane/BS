@@ -1,0 +1,105 @@
+---
+/**
+ * Circular BUSINESS STAND mark. The ring text runs along SVG paths, so each instance
+ * needs its own `id` to keep path references unique on the page.
+ */
+interface Props {
+  id: string;
+  class?: string;
+  tone?: 'emerald' | 'ivory';
+}
+
+const { id, class: className, tone = 'emerald' } = Astro.props;
+const top = `${id}-arc-top`;
+const bottom = `${id}-arc-bottom`;
+---
+
+<svg
+  class:list={['logo', `logo--${tone}`, className]}
+  viewBox="0 0 200 200"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-hidden="true"
+  focusable="false"
+>
+  <defs>
+    <path id={top} d="M 34 100 A 66 66 0 0 1 166 100" />
+    <path id={bottom} d="M 27 100 A 73 73 0 0 0 173 100" />
+  </defs>
+  <circle class="logo__disc" cx="100" cy="100" r="98" />
+  <circle class="logo__ring" cx="100" cy="100" r="88" />
+  <circle class="logo__ring logo__ring--inner" cx="100" cy="100" r="52" />
+  <text class="logo__arc">
+    <textPath href={`#${top}`} startOffset="50%" text-anchor="middle">BUSINESS STAND</textPath>
+  </text>
+  <text class="logo__arc logo__arc--small">
+    <textPath href={`#${bottom}`} startOffset="50%" text-anchor="middle">EXHIBITION · DESIGN · BUILD</textPath>
+  </text>
+  <!-- Axonometric stand: platform, back wall and fascia -->
+  <g class="logo__mark">
+    <path d="M70 116 L100 130 L130 116 L100 102 Z" />
+    <path d="M70 116 L70 84 L100 70 L100 102" />
+    <path d="M100 70 L130 84 L130 116" />
+    <path d="M85 109 L85 92 L100 85" />
+  </g>
+</svg>
+
+<style>
+  .logo {
+    display: block;
+    overflow: visible;
+  }
+
+  .logo__disc {
+    fill: var(--emerald);
+  }
+
+  .logo__ring {
+    fill: none;
+    stroke: var(--ivory);
+    stroke-opacity: 0.45;
+    stroke-width: 1;
+  }
+
+  .logo__ring--inner {
+    stroke-opacity: 0.3;
+  }
+
+  .logo__arc {
+    fill: var(--ivory);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 3.4px;
+  }
+
+  .logo__arc--small {
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 2.6px;
+    fill-opacity: 0.8;
+  }
+
+  .logo__mark {
+    fill: none;
+    stroke: var(--ivory);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .logo--ivory .logo__disc {
+    fill: var(--ivory);
+  }
+
+  .logo--ivory .logo__ring {
+    stroke: var(--forest);
+  }
+
+  .logo--ivory .logo__arc {
+    fill: var(--forest);
+  }
+
+  .logo--ivory .logo__mark {
+    stroke: var(--forest);
+  }
+</style>

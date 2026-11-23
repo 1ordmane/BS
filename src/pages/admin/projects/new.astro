@@ -1,0 +1,27 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import ProjectForm from '@/components/admin/ProjectForm.astro';
+---
+
+<AdminLayout title="Новый проект">
+  <div class="admin-head">
+    <div>
+      <p class="crumbs"><a href="/admin/projects">← Все проекты</a></p>
+      <h1>Новый проект</h1>
+      <p>Проект сохранится как черновик. Фотографии можно будет загрузить сразу после этого.</p>
+    </div>
+  </div>
+
+  <div data-project-editor data-new>
+    <ProjectForm />
+  </div>
+
+  <div class="savebar">
+    <span class="savebar__state" data-save-state data-clean-text="Черновик ещё не создан">Черновик ещё не создан</span>
+    <button class="button button--primary" type="button" data-action="save">Создать черновик</button>
+  </div>
+</AdminLayout>
+
+<script>
+  import '@/scripts/admin/project-editor';
+</script>

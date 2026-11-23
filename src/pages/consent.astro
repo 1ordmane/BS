@@ -1,0 +1,107 @@
+---
+import LegalPage from '@/components/LegalPage.astro';
+import { actions, formData, operator, operatorDetails, requestChannels } from '@/data/legal';
+import { INQUIRY_RECIPIENT, mailTransport } from '@/server/mail';
+
+/**
+ * Согласие на обработку персональных данных — a separate document, as required since 01.09.2025
+ * (ч. 1 ст. 9 152-ФЗ as amended by 156-ФЗ of 24.06.2025). Its content follows ч. 4 ст. 9:
+ * operator, purpose, data, actions and methods, processors, term and how to withdraw it.
+ * The visitor gives it with the checkbox of the inquiry form.
+ */
+const { company } = Astro.locals.site;
+const details = operatorDetails();
+const channels = requestChannels(company);
+const inbox = mailTransport()?.to ?? INQUIRY_RECIPIENT;
+const data = [...formData.required, ...formData.optional.map((item) => `${item} (если указаны)`), ...formData.automatic];
+---
+
+<LegalPage
+  title="Согласие на обработку персональных данных"
+  metaTitle={`Согласие на обработку персональных данных — ${company.name}`}
+  description={`Текст согласия на обработку персональных данных, которое даётся при отправке заявки на сайте ${company.name}.`}
+>
+  <p>
+    Отправляя заявку через форму на этом сайте и отмечая поле согласия, я свободно, своей волей и в своём интересе
+    даю согласие {operator.name} (далее — Оператор) на обработку моих персональных данных на следующих условиях.
+  </p>
+  {
+    details.length > 0 && (
+      <dl>
+        {details.map((item) => (
+          <div>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+    )
+  }
+
+  <section aria-labelledby="consent-purpose">
+    <h2 id="consent-purpose">Цель обработки</h2>
+    <p>Рассмотрение моей заявки, связь со мной по указанным контактам, подготовка предложения и обсуждение проекта выставочного стенда.</p>
+  </section>
+
+  <section aria-labelledby="consent-data">
+    <h2 id="consent-data">Перечень персональных данных</h2>
+    <ul>
+      {data.map((item, index) => <li>{item}{index === data.length - 1 ? '.' : ';'}</li>)}
+    </ul>
+  </section>
+
+  <section aria-labelledby="consent-actions">
+    <h2 id="consent-actions">Действия с данными и способы обработки</h2>
+    <p>
+      {actions[0]!.toUpperCase() + actions.slice(1)}. Обработка ведётся с использованием средств автоматизации.
+      Заявка направляется письмом на адрес электронной почты Оператора {inbox}. Данные, отправленные через сайт,
+      обрабатывает только {operator.name}.
+    </p>
+    {
+      operator.processors.length > 0 && (
+        <>
+          <p>По поручению Оператора данные обрабатывают:</p>
+          <ul>
+            {operator.processors.map((processor) => (
+              <li>
+                {processor.name}, {processor.address} — {processor.purpose};
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+  </section>
+
+  <section aria-labelledby="consent-term">
+    <h2 id="consent-term">Срок действия и отзыв согласия</h2>
+    <p>
+      Согласие действует до достижения цели обработки{operator.retention ? `, но не дольше чем ${operator.retention}` : ''},
+      либо до его отзыва. Я могу отозвать согласие в любой момент, направив Оператору заявление{channels.length > 0 ? ' любым из способов:' : '.'}
+    </p>
+    {
+      channels.length > 0 && (
+        <dl>
+          {channels.map((channel) => (
+            <div>
+              <dt>{channel.label}</dt>
+              <dd>{channel.href ? <a href={channel.href}>{channel.value}</a> : channel.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )
+    }
+    <p>
+      После получения отзыва Оператор прекращает обработку и уничтожает данные в срок не более 30 дней, если иное не
+      предусмотрено федеральным законом (часть 5 статьи 21 Федерального закона № 152-ФЗ «О персональных данных»).
+    </p>
+  </section>
+
+  <section aria-labelledby="consent-policy">
+    <h2 id="consent-policy">Политика обработки персональных данных</h2>
+    <p>
+      Подробно порядок обработки, сроки хранения, меры защиты и мои права описаны в
+      <a href="/privacy/">Политике обработки персональных данных</a>.
+    </p>
+  </section>
+</LegalPage>

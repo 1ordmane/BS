@@ -1,0 +1,105 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { formatDate } from '@/lib/format';
+import { all, one } from '@/server/db';
+import { DOC_KEYS, DOC_TITLES, getDraft } from '@/server/content';
+import { countByStatus, listInquiries } from '@/server/inquiries';
+
+const count = (sql: string) => Number(one<{ n: number }>(sql)!.n);
+const stats = [
+  { label: 'Опубликовано проектов', value: count("SELECT COUNT(*) AS n FROM projects WHERE status = 'published'"), href: '/admin/projects?status=published' },
+  { label: 'Черновиков', value: count("SELECT COUNT(*) AS n FROM projects WHERE status = 'draft'"), href: '/admin/projects?status=draft' },
+  { label: 'Новых заявок', value: countByStatus().new ?? 0, href: '/admin/requests?status=new' },
+  { label: 'Услуг на сайте', value: count('SELECT COUNT(*) AS n FROM services WHERE published = 1'), href: '/admin/services' },
+];
+const pending = DOC_KEYS.filter((key) => getDraft(key).pending);
+const editors: Record<string, string> = { homepage: '/admin/homepage', about: '/admin/about', company: '/admin/settings' };
+const recentRequests = listInquiries({ status: 'new' }).slice(0, 5);
+const activity = all<{ at: string; summary: string; email: string | null }>(
+  'SELECT a.at, a.summary, u.email FROM activity a LEFT JOIN users u ON u.id = a.user_id ORDER BY a.id DESC LIMIT 12',
+);
+---
+
+<AdminLayout title="Обзор">
+  <div class="admin-head">
+    <div>
+      <h1>Обзор</h1>
+      <p>Здравствуйте, {Astro.locals.session!.user.email}.</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    {
+      stats.map((stat) => (
+        <a class="stat" href={stat.href}>
+          <span class="stat__value">{stat.value}</span>
+          <span class="stat__label">{stat.label}</span>
+        </a>
+      ))
+    }
+  </div>
+
+  {
+    pending.length > 0 && (
+      <div class="notice" style="margin-top:1.5rem">
+        <span>
+          Есть неопубликованные черновики:{' '}
+          {pending.map((key, index) => (
+            <>
+              {index > 0 && ', '}
+              <a href={editors[key]}>{DOC_TITLES[key]}</a>
+            </>
+          ))}
+          . Посетители видят прежнюю версию, пока черновик не опубликован.
+        </span>
+      </div>
+    )
+  }
+
+  <div class="split" style="margin-top:1.5rem">
+    <section class="panel">
+      <div class="panel__head">
+        <h2 class="panel__title">Новые заявки</h2>
+        <a href="/admin/requests">Все заявки</a>
+      </div>
+      {
+        recentRequests.length === 0 ? (
+          <p class="muted">Новых заявок нет.</p>
+        ) : (
+          <ul class="timeline-list" role="list">
+            {recentRequests.map((request) => (
+              <li>
+                <a href={`/admin/requests/${request.id}`}>
+                  {request.name}
+                  {request.company && ` · ${request.company}`}
+                </a>
+                <time>{formatDate(request.created_at)}</time>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      <p class="field__hint" style="margin-top:1rem">
+        Уведомления о заявках на почту или в Telegram не настроены: новые заявки видны только здесь.
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="panel__head"><h2 class="panel__title">Последние действия</h2></div>
+      {
+        activity.length === 0 ? (
+          <p class="muted">Пока пусто.</p>
+        ) : (
+          <ul class="timeline-list" role="list">
+            {activity.map((item) => (
+              <li>
+                <span>{item.summary}</span>
+                <time>{formatDate(item.at)}</time>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+  </div>
+</AdminLayout>

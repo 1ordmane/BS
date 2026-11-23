@@ -1,0 +1,39 @@
+---
+import type { ImageView } from '@/server/images';
+
+/**
+ * Project photo gallery. Every operation (upload, reorder, cover, description, delete) is
+ * its own request; the page never reloads, so the project form keeps unsaved text.
+ */
+interface Props {
+  projectId: number;
+  images: (ImageView & { position: number })[];
+  coverId: string | null;
+}
+
+const { projectId, images, coverId } = Astro.props;
+---
+
+<section class="panel" aria-labelledby="gallery-title" data-gallery data-project-id={projectId} data-initial={JSON.stringify({ images, coverId })}>
+  <div class="panel__head">
+    <h2 class="panel__title" id="gallery-title">Фотографии</h2>
+    <p class="panel__hint">
+      Порядок меняется перетаскиванием или стрелками и сохраняется сразу. Тексты проекта при этом не трогаются.
+    </p>
+  </div>
+
+  <label class="dropzone" data-dropzone>
+    <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden data-file-input data-ignore />
+    <strong>Выберите фото или перетащите их сюда</strong>
+    <span>JPG, PNG, WebP или AVIF, до 20 МБ каждое, от 200 пикселей по стороне. Можно несколько сразу.</span>
+  </label>
+  <div class="uploads" data-uploads aria-live="polite"></div>
+
+  <p class="muted" data-gallery-empty hidden style="margin-top:1rem">Фотографий пока нет. Первое загруженное фото станет обложкой.</p>
+  <ul class="gallery" role="list" data-gallery-list style="margin-top:1rem" aria-label="Фотографии проекта по порядку"></ul>
+  <p class="visually-hidden" aria-live="polite" data-gallery-status></p>
+</section>
+
+<script>
+  import '@/scripts/admin/gallery';
+</script>

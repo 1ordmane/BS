@@ -1,0 +1,104 @@
+---
+import '@/styles/global.css';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+import MessengerModal from '@/components/MessengerModal.astro';
+import PortfolioSheet from '@/components/PortfolioSheet.astro';
+import ProjectDialog from '@/components/ProjectDialog.astro';
+import { getContent } from '@/data';
+// Cyrillic subsets of both families, preloaded so the headline does not reflow when they arrive.
+import displayCyrillic from '@fontsource-variable/commissioner/files/commissioner-cyrillic-flar-normal.woff2?url';
+import sansCyrillic from '@fontsource-variable/onest/files/onest-cyrillic-wght-normal.woff2?url';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Image used for link previews (Open Graph), a 1200×630 URL. Defaults to the hero image. */
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+const { title, description, ogImage, noindex = false } = Astro.props;
+const content = getContent(Astro.currentLocale);
+const { company, images } = Astro.locals.site;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const og = ogImage ?? images.hero?.og;
+const ogUrl = og ? new URL(og, Astro.site) : null;
+---
+
+<!doctype html>
+<html lang={content.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="preload" href={displayCyrillic} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={sansCyrillic} as="font" type="font/woff2" crossorigin />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#123f34" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:site_name" content={company.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {
+      ogUrl && (
+        <>
+          <meta property="og:image" content={ogUrl} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+        </>
+      )
+    }
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body class="site">
+    <a class="skip-link" href="#main">{content.ui.skip}</a>
+    <Header />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    <!-- Outside <main>: they stay usable while the portfolio menu makes the page behind inert. -->
+    <PortfolioSheet />
+    <ProjectDialog />
+    <MessengerModal />
+
+    <script>
+      // Gentle entrance for elements marked with data-reveal, and the approach timeline.
+      const targets = document.querySelectorAll<HTMLElement>('[data-reveal], [data-timeline]');
+
+      if (!('IntersectionObserver' in window)) {
+        targets.forEach((el) => el.classList.add('is-visible'));
+      } else {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { rootMargin: '0px 0px -10% 0px', threshold: 0.12 },
+        );
+        targets.forEach((el) => observer.observe(el));
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  main:focus {
+    outline: none;
+  }
+</style>

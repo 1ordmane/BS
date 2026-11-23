@@ -1,0 +1,23 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectDetail from '@/components/ProjectDetail.astro';
+import PreviewBar from '@/components/admin/PreviewBar.astro';
+import { getProject } from '@/server/projects';
+import { buildSite, projectPage } from '@/server/site';
+
+// Admin-only (the middleware requires a session for /admin). Shows the saved project even if unpublished.
+const id = Number(Astro.params.id);
+const project = Number.isInteger(id) ? getProject(id) : undefined;
+if (!project) return Astro.rewrite('/404');
+
+Astro.locals.site = buildSite('published');
+const view = projectPage(project);
+---
+
+<BaseLayout title={`Предпросмотр: ${project.title}`} description={project.summary} noindex>
+  <PreviewBar
+    text={project.status === 'published' ? 'Так проект выглядит на сайте (последнее сохранение).' : 'Черновик: посетители этот проект не видят.'}
+    back={`/admin/projects/${project.id}`}
+  />
+  <ProjectDetail view={view} />
+</BaseLayout>

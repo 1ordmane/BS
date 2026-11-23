@@ -1,0 +1,373 @@
+---
+import ScrollLogo from './ScrollLogo.astro';
+import logoFrames from '@/data/logo-frames.json';
+import Icon from './Icon.astro';
+import { getContent } from '@/data';
+
+const { nav, ui } = getContent(Astro.currentLocale);
+const { hero, contact } = Astro.locals.site.homepage;
+// «Обсудить проект» opens the messenger window (MessengerModal) when it points to the contact section.
+const opensMessenger = hero.primaryHref === '/#contact' || hero.primaryHref === '#contact';
+const left = nav.slice(0, 3);
+const right = nav.slice(3);
+---
+
+<header class="site-header" style={`--header-bg: ${logoFrames.background}`} data-header>
+  <div class="site-header__bar container">
+    <nav class="site-header__nav site-header__nav--left" aria-label={ui.mainNav}>
+      <ul role="list">
+        {left.map((item) => <li><a href={item.href} data-portfolio-open={item.portfolio ? '' : undefined}>{item.label}</a></li>)}
+      </ul>
+    </nav>
+
+    <a class="site-header__logo" href="/" aria-label={ui.home}>
+      <ScrollLogo />
+    </a>
+
+    <div class="site-header__end">
+      <nav class="site-header__nav" aria-label={ui.mainNav}>
+        <ul role="list">
+          {right.map((item) => <li><a href={item.href} data-portfolio-open={item.portfolio ? '' : undefined}>{item.label}</a></li>)}
+        </ul>
+      </nav>
+      <a class="button button--primary site-header__cta" href={hero.primaryHref} data-messenger={opensMessenger ? '' : undefined}>{hero.primaryLabel}</a>
+      <button
+        class="site-header__toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        data-menu-toggle
+        data-label-open={ui.menuOpen}
+        data-label-close={ui.menuClose}
+      >
+        <span class="visually-hidden" data-menu-label>{ui.menuOpen}</span>
+        <span class="site-header__burger" aria-hidden="true"><span></span><span></span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobile-menu" data-menu hidden>
+    <nav class="mobile-menu__inner container" aria-label={ui.mainNav}>
+      <ul role="list" class="mobile-menu__list">
+        {
+          nav.map((item, index) => (
+            <li style={`--i: ${index}`}>
+              <a href={item.href} data-menu-link data-portfolio-open={item.portfolio ? '' : undefined}>
+                {item.label}
+                <Icon name="ArrowUpRight" size={22} />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="button button--primary mobile-menu__cta" href={hero.primaryHref} data-menu-link data-messenger={opensMessenger ? '' : undefined}>{hero.primaryLabel}</a>
+      <p class="mobile-menu__note muted">{contact.text}</p>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    /* Opaque on purpose: a backdrop-filter here would trap the fixed mobile menu inside the header box.
+       Same grey as the logo video's background, so the logo blends into the bar. */
+    background: var(--header-bg);
+    border-bottom: 1px solid transparent;
+    transition:
+      box-shadow 0.4s var(--ease),
+      border-color 0.4s var(--ease);
+  }
+
+  .site-header.is-scrolled {
+    border-color: var(--line);
+    box-shadow: 0 10px 30px -22px rgb(18 63 52 / 0.45);
+  }
+
+  .site-header__bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    /* Fixed row height so the hanging logo does not push the links off-centre */
+    grid-template-rows: 100%;
+    align-items: center;
+    height: var(--header-h);
+  }
+
+  .site-header__nav ul {
+    display: flex;
+    align-items: center;
+    gap: clamp(1.25rem, 0.2rem + 2vw, 2.5rem);
+    margin: 0;
+  }
+
+  .site-header__nav a {
+    position: relative;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    color: var(--charcoal);
+    padding-block: 0.5rem;
+    transition: color 0.25s var(--ease);
+  }
+
+  .site-header__nav a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.2rem;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s var(--ease);
+  }
+
+  .site-header__nav a:hover {
+    color: var(--emerald);
+  }
+
+  .site-header__nav a:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* The logo sits on the bar's centre line and hangs below its lower edge.
+     Its size never changes on scroll: only the header's border and shadow do. */
+  .site-header__logo {
+    position: relative;
+    align-self: start;
+    display: block;
+    width: 160px;
+    height: 160px;
+    margin-top: 10px;
+    border-radius: 50%;
+    background: var(--header-bg);
+    box-shadow: 0 14px 30px -18px rgb(18 63 52 / 0.55);
+  }
+
+  .site-header__end {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: clamp(1.25rem, 0.2rem + 2vw, 2.5rem);
+  }
+
+  .site-header__cta {
+    min-height: 46px;
+    padding-inline: 1.35rem;
+  }
+
+  .site-header__toggle {
+    display: none;
+    width: 48px;
+    height: 48px;
+    margin-right: -8px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+
+  .site-header__burger {
+    position: relative;
+    display: block;
+    width: 24px;
+    height: 12px;
+    margin-inline: auto;
+  }
+
+  .site-header__burger span {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1.5px;
+    background: var(--charcoal);
+    border-radius: 2px;
+    transition:
+      transform 0.35s var(--ease),
+      top 0.35s var(--ease);
+  }
+
+  .site-header__burger span:first-child {
+    top: 0;
+  }
+
+  .site-header__burger span:last-child {
+    top: 10.5px;
+  }
+
+  [aria-expanded='true'] .site-header__burger span:first-child {
+    top: 5.25px;
+    transform: rotate(45deg);
+  }
+
+  [aria-expanded='true'] .site-header__burger span:last-child {
+    top: 5.25px;
+    transform: rotate(-45deg);
+  }
+
+  /* ---------- Mobile menu ---------- */
+
+  .mobile-menu {
+    position: fixed;
+    inset: var(--header-h) 0 0;
+    z-index: -1;
+    background: var(--paper);
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.35s var(--ease);
+  }
+
+  .mobile-menu.is-open {
+    opacity: 1;
+  }
+
+  .mobile-menu__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding-top: 3.5rem;
+    padding-bottom: 2.5rem;
+    min-height: 100%;
+  }
+
+  .mobile-menu__list li {
+    border-bottom: 1px solid var(--line);
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 0.5s var(--ease-out),
+      transform 0.5s var(--ease-out);
+    transition-delay: calc(0.05s * var(--i) + 0.08s);
+  }
+
+  .mobile-menu.is-open .mobile-menu__list li {
+    opacity: 1;
+    transform: none;
+  }
+
+  .mobile-menu__list a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 1rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 1.4rem + 1.8vw, 2.375rem);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-display);
+    text-decoration: none;
+  }
+
+  .mobile-menu__list a :global(.icon) {
+    color: var(--emerald);
+  }
+
+  .mobile-menu__cta {
+    align-self: flex-start;
+  }
+
+  .mobile-menu__note {
+    max-width: 30em;
+    font-size: var(--text-sm);
+  }
+
+  @media (max-width: 1180px) {
+    .site-header__nav--left ul,
+    .site-header__end .site-header__nav ul {
+      gap: 1.25rem;
+    }
+  }
+
+  @media (max-width: 1080px) {
+    .site-header__nav,
+    .site-header__cta {
+      display: none;
+    }
+
+    .site-header__toggle {
+      display: block;
+    }
+
+    .site-header__bar {
+      grid-template-columns: 48px 1fr 48px;
+    }
+
+    .site-header__logo {
+      grid-column: 2;
+      justify-self: center;
+      width: 108px;
+      height: 108px;
+      margin-top: 8px;
+    }
+
+    .site-header__end {
+      grid-column: 3;
+    }
+  }
+
+  @media (min-width: 1081px) {
+    .mobile-menu {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = document.querySelector<HTMLElement>('[data-menu]');
+  const label = document.querySelector<HTMLElement>('[data-menu-label]');
+
+  if (header) {
+    const update = () => header.classList.toggle('is-scrolled', window.scrollY > 24);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+  }
+
+  if (toggle && menu && label) {
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      label.textContent = (open ? toggle.dataset.labelClose : toggle.dataset.labelOpen) ?? '';
+      document.documentElement.style.overflow = open ? 'hidden' : '';
+
+      if (open) {
+        menu.hidden = false;
+        requestAnimationFrame(() => menu.classList.add('is-open'));
+      } else {
+        menu.classList.remove('is-open');
+        window.setTimeout(() => {
+          if (toggle.getAttribute('aria-expanded') === 'false') menu.hidden = true;
+        }, 350);
+      }
+    };
+
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+
+    menu.querySelectorAll('[data-menu-link]').forEach((link) => {
+      link.addEventListener('click', () => setOpen(false));
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+
+    // Keep keyboard focus inside the open menu and the toggle button.
+    document.addEventListener('focusin', (event) => {
+      if (toggle.getAttribute('aria-expanded') !== 'true') return;
+      const target = event.target as Node;
+      if (!menu.contains(target) && target !== toggle) {
+        menu.querySelector<HTMLElement>('a')?.focus();
+      }
+    });
+
+    window.matchMedia('(min-width: 1081px)').addEventListener('change', (event) => {
+      if (event.matches) setOpen(false);
+    });
+  }
+</script>

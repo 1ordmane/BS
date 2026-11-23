@@ -1,0 +1,111 @@
+---
+import Logo from './Logo.astro';
+import { getContent } from '@/data';
+
+/** A short closing line: the contact details live in the contact section right above it. */
+const { nav, footer, ui } = getContent(Astro.currentLocale);
+const { company } = Astro.locals.site;
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <div class="site-footer__brand">
+      <a href="/" class="site-footer__logo" aria-label={company.name}>
+        <Logo id="footer-logo" tone="ivory" />
+      </a>
+      <p>{company.description}</p>
+    </div>
+
+    <nav class="site-footer__nav" aria-label={ui.mainNav}>
+      <ul role="list">
+        {nav.map((item) => <li><a href={item.href} data-portfolio-open={item.portfolio ? '' : undefined}>{item.label}</a></li>)}
+      </ul>
+    </nav>
+
+    <div class="site-footer__legal">
+      <p>© {year} {company.name}. {footer.rights}</p>
+      <a href="/privacy/">{footer.privacy}</a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--hall-deep);
+    color: var(--on-dark-muted);
+    font-size: var(--text-sm);
+  }
+
+  .site-footer__inner {
+    display: grid;
+    gap: 2rem 3rem;
+    padding-block: clamp(2.5rem, 2rem + 2vw, 3.5rem);
+  }
+
+  @media (min-width: 1000px) {
+    .site-footer__inner {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr);
+      align-items: center;
+    }
+  }
+
+  .site-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    max-width: 24rem;
+  }
+
+  .site-footer__logo {
+    flex-shrink: 0;
+    display: block;
+    width: 64px;
+    border-radius: 50%;
+  }
+
+  .site-footer__nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.75rem;
+    margin: 0;
+  }
+
+  .site-footer a {
+    text-decoration: none;
+    transition: color 0.25s var(--ease);
+  }
+
+  .site-footer a:hover {
+    color: #fff;
+  }
+
+  .site-footer a:focus-visible {
+    outline-color: var(--mint);
+  }
+
+  /* Comfortable tap targets on touch screens */
+  .site-footer__nav a,
+  .site-footer__legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .site-footer__nav ul {
+    column-gap: 1.5rem;
+    row-gap: 0;
+  }
+
+  .site-footer__legal {
+    display: grid;
+    font-size: var(--text-xs);
+  }
+
+  @media (min-width: 1000px) {
+    .site-footer__legal {
+      justify-items: end;
+      text-align: right;
+    }
+  }
+</style>

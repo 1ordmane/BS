@@ -1,0 +1,47 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getContent } from '@/data';
+
+const { meta, ui } = getContent(Astro.currentLocale);
+---
+
+<BaseLayout title={meta.notFound.title} description={meta.notFound.description} noindex>
+  <section class="not-found container">
+    <p class="not-found__code" aria-hidden="true">404</p>
+    <h1 class="display display--md not-found__title">{ui.notFoundTitle}</h1>
+    <p class="lead muted">{ui.notFoundText}</p>
+    <div class="not-found__actions">
+      <a class="button button--primary" href="/">{ui.backHome}</a>
+      <a class="button button--ghost" href="/#projects">{ui.notFoundProjects}</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found {
+    display: grid;
+    justify-items: start;
+    gap: 1.75rem;
+    padding-top: clamp(7rem, 5rem + 6vw, 11rem);
+    padding-bottom: var(--section-space);
+  }
+
+  .not-found__code {
+    font-family: var(--font-display);
+    font-size: clamp(6rem, 4rem + 8vw, 11rem);
+    font-weight: var(--weight-light);
+    line-height: 0.8;
+    letter-spacing: -0.03em;
+    color: var(--emerald);
+  }
+
+  .not-found__title {
+    color: var(--forest);
+  }
+
+  .not-found__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+</style>

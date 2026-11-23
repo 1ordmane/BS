@@ -1,0 +1,677 @@
+---
+import Icon from './Icon.astro';
+import { getContent } from '@/data';
+
+const { form } = getContent(Astro.currentLocale);
+const { fields } = form;
+
+const accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.zip';
+---
+
+<form
+  class="inquiry"
+  method="post"
+  enctype="multipart/form-data"
+  novalidate
+  data-inquiry
+  data-errors={JSON.stringify(form.errors)}
+  data-status={JSON.stringify(form.status)}
+  data-sending={form.sending}
+  data-accept={accept}
+>
+  <div class="inquiry__grid">
+    <div class="field">
+      <label for="inquiry-name">{fields.name.label}</label>
+      <input id="inquiry-name" name="name" type="text" autocomplete="name" required placeholder={fields.name.placeholder} aria-describedby="inquiry-name-error" />
+      <p class="field__error" id="inquiry-name-error" data-error-for="name"></p>
+    </div>
+
+    <div class="field">
+      <label for="inquiry-company">{fields.company.label} <span class="field__optional">{form.optional}</span></label>
+      <input id="inquiry-company" name="company" type="text" autocomplete="organization" placeholder={fields.company.placeholder} />
+    </div>
+
+    <!-- Email or phone: at least one is required, either is enough. -->
+    <fieldset class="field field--full contact-pair" aria-describedby="inquiry-contact-hint inquiry-contact-error">
+      <legend class="contact-pair__legend">{fields.contact.legend}</legend>
+      <p class="field__hint contact-pair__hint" id="inquiry-contact-hint">{fields.contact.hint}</p>
+      <div class="contact-pair__fields">
+        <div class="field">
+          <label for="inquiry-email">{fields.email.label}</label>
+          <input
+            id="inquiry-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            inputmode="email"
+            placeholder={fields.email.placeholder}
+            aria-describedby="inquiry-contact-hint inquiry-email-error inquiry-contact-error"
+          />
+          <p class="field__error" id="inquiry-email-error" data-error-for="email"></p>
+        </div>
+        <div class="field">
+          <label for="inquiry-phone">{fields.phone.label}</label>
+          <input
+            id="inquiry-phone"
+            name="phone"
+            type="tel"
+            autocomplete="tel"
+            inputmode="tel"
+            placeholder={fields.phone.placeholder}
+            aria-describedby="inquiry-contact-hint inquiry-phone-error inquiry-contact-error"
+          />
+          <p class="field__error" id="inquiry-phone-error" data-error-for="phone"></p>
+        </div>
+      </div>
+      <p class="field__error" id="inquiry-contact-error" data-error-for="contact"></p>
+    </fieldset>
+
+    <div class="field">
+      <label for="inquiry-event">{fields.event.label} <span class="field__optional">{form.optional}</span></label>
+      <input id="inquiry-event" name="event" type="text" placeholder={fields.event.placeholder} />
+    </div>
+
+    <div class="field">
+      <label for="inquiry-area">{fields.area.label} <span class="field__optional">{form.optional}</span></label>
+      <input id="inquiry-area" name="area" type="text" inputmode="decimal" placeholder={fields.area.placeholder} aria-describedby="inquiry-area-error" />
+      <p class="field__error" id="inquiry-area-error" data-error-for="area"></p>
+    </div>
+
+    <div class="field field--full">
+      <label for="inquiry-message">{fields.message.label}</label>
+      <textarea id="inquiry-message" name="message" rows="5" required placeholder={fields.message.placeholder} aria-describedby="inquiry-message-error"></textarea>
+      <p class="field__error" id="inquiry-message-error" data-error-for="message"></p>
+    </div>
+
+    <div class="field field--full">
+      <span class="field__label" id="inquiry-file-label">{fields.file.label} <span class="field__optional">{form.optional}</span></span>
+      <div class="file" data-file>
+        <label class="file__button" for="inquiry-file">
+          <Icon name="Paperclip" size={18} />
+          <span>{fields.file.button}</span>
+        </label>
+        <input
+          class="visually-hidden"
+          id="inquiry-file"
+          name="brief"
+          type="file"
+          accept={accept}
+          aria-labelledby="inquiry-file-label"
+          aria-describedby="inquiry-file-hint inquiry-file-error"
+        />
+        <span class="file__name" data-file-name hidden></span>
+        <button class="file__remove" type="button" data-file-remove hidden>
+          <Icon name="X" size={16} />
+          <span class="visually-hidden">{fields.file.remove}</span>
+        </button>
+      </div>
+      <p class="field__hint" id="inquiry-file-hint">{fields.file.hint}</p>
+      <p class="field__error" id="inquiry-file-error" data-error-for="brief"></p>
+    </div>
+
+    <!-- Spam trap: hidden from people, filled in by bots -->
+    <div class="inquiry__trap" aria-hidden="true">
+      <label for="inquiry-website">Website</label>
+      <input id="inquiry-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="field field--full">
+      <label class="consent" for="inquiry-consent">
+        <input id="inquiry-consent" name="consent" type="checkbox" value="yes" required aria-describedby="inquiry-consent-error" />
+        <span class="consent__box" aria-hidden="true"><Icon name="Check" size={14} strokeWidth={2.4} /></span>
+        <span>{fields.consent.before}<a href="/consent/" target="_blank">{fields.consent.consent}</a>{fields.consent.middle}<a href="/privacy/" target="_blank">{fields.consent.policy}</a></span>
+      </label>
+      <p class="field__error" id="inquiry-consent-error" data-error-for="consent"></p>
+    </div>
+  </div>
+
+  <div class="inquiry__footer">
+    <button class="button button--primary inquiry__submit" type="submit" data-submit>
+      <span class="inquiry__spinner" aria-hidden="true"><Icon name="LoaderCircle" size={18} strokeWidth={2} /></span>
+      <span data-submit-label>{form.submit}</span>
+    </button>
+  </div>
+
+  <div class="inquiry__status" role="status" aria-live="polite" tabindex="-1" data-status-box hidden>
+    <span class="inquiry__status-icon" data-status-icon="success"><Icon name="CircleCheck" size={22} /></span>
+    <span class="inquiry__status-icon" data-status-icon="error"><Icon name="CircleAlert" size={22} /></span>
+    <div>
+      <p class="inquiry__status-title" data-status-title></p>
+      <p class="inquiry__status-text" data-status-text></p>
+    </div>
+  </div>
+</form>
+
+<style>
+  .inquiry {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .inquiry__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem 1.25rem;
+  }
+
+  .field {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  /* Email and phone side by side under one legend */
+  .contact-pair {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+
+  .contact-pair__legend {
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--charcoal);
+  }
+
+  .contact-pair__hint {
+    margin-top: -0.15rem;
+  }
+
+  .contact-pair__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem 1.25rem;
+    margin-top: 0.25rem;
+  }
+
+  @media (max-width: 560px) {
+    .contact-pair__fields {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .field--full {
+    grid-column: 1 / -1;
+  }
+
+  .field label:not(.consent):not(.file__button),
+  .field__label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--charcoal);
+  }
+
+  .field__optional {
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .field input[type='text'],
+  .field input[type='email'],
+  .field input[type='tel'],
+  .field textarea {
+    width: 100%;
+    min-height: 52px;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    font-size: 1rem;
+    line-height: 1.4;
+    transition:
+      border-color 0.25s var(--ease),
+      box-shadow 0.25s var(--ease);
+  }
+
+  .field textarea {
+    resize: vertical;
+    min-height: 140px;
+  }
+
+  .field input::placeholder,
+  .field textarea::placeholder {
+    color: #8b928d;
+  }
+
+  .field input:hover,
+  .field textarea:hover {
+    border-color: var(--muted);
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--emerald);
+    box-shadow: 0 0 0 3px rgb(0 107 80 / 0.16);
+  }
+
+  .field [aria-invalid='true'] {
+    border-color: var(--danger) !important;
+  }
+
+  .field [aria-invalid='true']:focus {
+    box-shadow: 0 0 0 3px rgb(164 53 43 / 0.15) !important;
+  }
+
+  .field__hint {
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .field__error {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-ui);
+    color: var(--danger);
+  }
+
+  .field__error:empty {
+    display: none;
+  }
+
+  /* ---------- File attachment ---------- */
+
+  .file {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .file__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 48px;
+    padding: 0.7rem 1.2rem;
+    border: 1px dashed var(--line-strong);
+    border-radius: 999px;
+    background: #fff;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--forest);
+    cursor: pointer;
+    transition:
+      border-color 0.25s var(--ease),
+      color 0.25s var(--ease);
+  }
+
+  .file__button:hover,
+  .file:focus-within .file__button {
+    border-color: var(--emerald);
+    color: var(--emerald);
+  }
+
+  .file:focus-within .file__button {
+    outline: 2px solid var(--emerald);
+    outline-offset: 3px;
+  }
+
+  .file__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-sm);
+    max-width: 100%;
+  }
+
+  .file__remove {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .file__remove:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  /* ---------- Consent ---------- */
+
+  .consent {
+    position: relative;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    font-size: var(--text-sm);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .consent input {
+    position: absolute;
+    opacity: 0;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+  }
+
+  .consent__box {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: #fff;
+    color: transparent;
+    transition:
+      background-color 0.2s var(--ease),
+      border-color 0.2s var(--ease),
+      color 0.2s var(--ease);
+  }
+
+  .consent input:checked + .consent__box {
+    background: var(--emerald);
+    border-color: var(--emerald);
+    color: #fff;
+  }
+
+  .consent input:focus-visible + .consent__box {
+    outline: 2px solid var(--emerald);
+    outline-offset: 3px;
+  }
+
+  .consent input[aria-invalid='true'] + .consent__box {
+    border-color: var(--danger);
+  }
+
+  .consent a {
+    color: var(--forest);
+  }
+
+  .inquiry__trap {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* ---------- Submit and status ---------- */
+
+  .inquiry__submit {
+    min-width: 15rem;
+  }
+
+  .inquiry__spinner {
+    display: none;
+  }
+
+  .inquiry__submit[aria-busy='true'] .inquiry__spinner {
+    display: inline-flex;
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .inquiry__status {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    padding: 1.15rem 1.25rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--warm-white);
+  }
+
+  .inquiry__status:focus {
+    outline: none;
+  }
+
+  .inquiry__status[hidden] {
+    display: none;
+  }
+
+  .inquiry__status-icon {
+    display: none;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .inquiry__status[data-state='success'] {
+    border-color: rgb(0 107 80 / 0.35);
+    background: var(--emerald-soft);
+  }
+
+  .inquiry__status[data-state='success'] [data-status-icon='success'] {
+    display: block;
+    color: var(--emerald);
+  }
+
+  .inquiry__status[data-state='error'] {
+    border-color: rgb(164 53 43 / 0.35);
+    background: #f8ebe8;
+  }
+
+  .inquiry__status[data-state='error'] [data-status-icon='error'] {
+    display: block;
+    color: var(--danger);
+  }
+
+  .inquiry__status-title {
+    font-weight: var(--weight-ui);
+    color: var(--charcoal);
+  }
+
+  .inquiry__status-text {
+    margin-top: 0.25rem;
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  @media (max-width: 640px) {
+    .inquiry__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .inquiry__submit {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  import { sendInquiry } from '@/lib/inquiry';
+
+  type State = 'success' | 'error';
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  // A phone number (at least 7 digits) or a messenger handle such as @username
+  // A phone number: digits with optional +, spaces, brackets and dashes; 10 to 15 digits in all.
+  const PHONE_CHARS = /^\+?[\d\s()\-]{10,25}$/;
+  const isPhone = (text: string) => PHONE_CHARS.test(text) && /^\d{10,15}$/.test(text.replace(/\D/g, ''));
+  // A name: at least two letters.
+  const isName = (text: string) => (text.match(/\p{L}/gu) ?? []).length >= 2;
+  const AREA = /^\d{1,5}(?:[.,]\d{1,2})?$/;
+
+  const form = document.querySelector<HTMLFormElement>('[data-inquiry]');
+
+  if (form) {
+    const errors = JSON.parse(form.dataset.errors ?? '{}') as Record<string, string>;
+    const statuses = JSON.parse(form.dataset.status ?? '{}') as Record<State, { title: string; text: string }>;
+    const accepted = (form.dataset.accept ?? '').split(',');
+
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+    const submitLabel = form.querySelector<HTMLElement>('[data-submit-label]')!;
+    const idleLabel = submitLabel.textContent ?? '';
+    const statusBox = form.querySelector<HTMLElement>('[data-status-box]')!;
+    const statusTitle = form.querySelector<HTMLElement>('[data-status-title]')!;
+    const statusText = form.querySelector<HTMLElement>('[data-status-text]')!;
+
+    const fileInput = form.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const fileName = form.querySelector<HTMLElement>('[data-file-name]')!;
+    const fileRemove = form.querySelector<HTMLButtonElement>('[data-file-remove]')!;
+
+    const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement;
+    const value = (name: string) => field(name).value.trim();
+
+    function validateField(name: string): string {
+      switch (name) {
+        case 'name':
+          if (!value('name')) return errors.required;
+          return isName(value('name')) ? '' : errors.name;
+        case 'email':
+          return !value('email') || EMAIL.test(value('email')) ? '' : errors.email;
+        case 'phone':
+          return !value('phone') || isPhone(value('phone')) ? '' : errors.phone;
+        // Email or phone: at least one of them.
+        case 'contact':
+          return value('email') || value('phone') ? '' : errors.contact;
+        case 'area':
+          return !value('area') || AREA.test(value('area')) ? '' : errors.area;
+        case 'message':
+          if (!value('message')) return errors.required;
+          return value('message').length >= 20 ? '' : errors.messageShort;
+        case 'brief': {
+          const file = fileInput.files?.[0];
+          if (!file) return '';
+          const extension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+          if (!accepted.includes(extension)) return errors.fileType;
+          return file.size <= MAX_FILE_SIZE ? '' : errors.fileSize;
+        }
+        case 'consent':
+          return (field('consent') as HTMLInputElement).checked ? '' : errors.consent;
+        default:
+          return '';
+      }
+    }
+
+    const slotText = (name: string) => form!.querySelector<HTMLElement>(`[data-error-for="${name}"]`)?.textContent ?? '';
+
+    function showError(name: string, message: string) {
+      const slot = form!.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
+      if (slot) slot.textContent = message;
+      // Email and phone are marked invalid by their own error or by the shared «one of them» error.
+      if (name === 'contact' || name === 'email' || name === 'phone') {
+        const shared = Boolean(slotText('contact'));
+        for (const key of ['email', 'phone']) field(key).setAttribute('aria-invalid', String(shared || Boolean(slotText(key))));
+        return;
+      }
+      (name === 'brief' ? fileInput : field(name)).setAttribute('aria-invalid', String(Boolean(message)));
+    }
+
+    // The input that receives focus for an error.
+    const focusTarget = (name: string) => (name === 'brief' ? fileInput : field(name === 'contact' ? 'email' : name));
+
+    const validated = ['name', 'email', 'phone', 'contact', 'area', 'message', 'brief', 'consent'];
+
+    // Validate on leaving a field, then live while the visitor corrects it.
+    validated.forEach((name) => {
+      if (name === 'contact') return;
+      const input = name === 'brief' ? fileInput : field(name);
+      const check = () => showError(name, validateField(name));
+      input.addEventListener('blur', () => {
+        if (name === 'consent' || name === 'brief') return;
+        if ((input as HTMLInputElement).value.trim()) check();
+      });
+      input.addEventListener('input', () => {
+        if (input.getAttribute('aria-invalid') === 'true') check();
+        // Filling either contact field clears the «email or phone» message.
+        if ((name === 'email' || name === 'phone') && slotText('contact')) showError('contact', validateField('contact'));
+      });
+      input.addEventListener('change', () => {
+        if (name === 'consent' || input.getAttribute('aria-invalid') === 'true') check();
+      });
+    });
+
+    // ---- File attachment ----
+    const formatSize = (bytes: number) =>
+      bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} КБ` : `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+
+    const syncFile = () => {
+      const file = fileInput.files?.[0];
+      fileName.hidden = fileRemove.hidden = !file;
+      fileName.textContent = file ? `${file.name} (${formatSize(file.size)})` : '';
+      showError('brief', validateField('brief'));
+    };
+    fileInput.addEventListener('change', syncFile);
+    fileRemove.addEventListener('click', () => {
+      fileInput.value = '';
+      syncFile();
+      fileInput.focus();
+    });
+
+    // ---- Status and loading ----
+    function setStatus(state: State | null, message?: string) {
+      if (!state) {
+        statusBox.hidden = true;
+        return;
+      }
+      statusBox.dataset.state = state;
+      statusTitle.textContent = statuses[state].title;
+      statusText.textContent = message ?? statuses[state].text;
+      statusBox.hidden = false;
+      statusBox.focus({ preventScroll: true });
+      statusBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function setLoading(loading: boolean) {
+      submit.disabled = loading;
+      submit.setAttribute('aria-busy', String(loading));
+      submitLabel.textContent = loading ? (form!.dataset.sending ?? '') : idleLabel;
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setStatus(null);
+
+      const failures = validated.filter((name) => {
+        const message = validateField(name);
+        showError(name, message);
+        return Boolean(message);
+      });
+
+      if (failures.length) {
+        const first = focusTarget(failures[0]!);
+        first.focus();
+        return;
+      }
+
+      // Silently drop submissions that filled the spam trap.
+      if (value('website')) {
+        form.reset();
+        syncFile();
+        return;
+      }
+
+      setLoading(true);
+      const data = new FormData(form);
+      data.delete('website');
+      if (!fileInput.files?.length) data.delete('brief');
+
+      const result = await sendInquiry(data);
+      setLoading(false);
+
+      // Field errors from the server check show next to their fields, as the browser check does.
+      const serverFields = Object.entries(result.fields ?? {}).filter(([name]) => validated.includes(name));
+      if (serverFields.length) {
+        serverFields.forEach(([name, message]) => showError(name, message));
+        focusTarget(serverFields[0]![0]).focus();
+        setStatus('error', errors.summary);
+        return;
+      }
+
+      setStatus(result.state, result.message);
+      if (result.state === 'success') {
+        form.reset();
+        syncFile();
+      }
+    });
+  }
+</script>

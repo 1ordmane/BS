@@ -1,0 +1,62 @@
+---
+import { formatDate } from '@/lib/format';
+import { getDraft, listHistory, type DocKey } from '@/server/content';
+
+/** Publishing panel for a draft document: state, preview, publish, discard, history. */
+interface Props {
+  docKey: DocKey;
+  preview?: string;
+}
+
+const { docKey, preview } = Astro.props;
+const draft = getDraft(docKey);
+const history = listHistory(docKey);
+---
+
+<aside class="split__aside stack">
+  <section class="panel">
+    <div class="panel__head">
+      <h2 class="panel__title">Публикация</h2>
+      <span class={`badge ${draft.pending ? 'badge--draft' : 'badge--published'}`} data-pending-badge>
+        {draft.pending ? 'Есть черновик' : 'Опубликовано'}
+      </span>
+    </div>
+    <p class="field__hint" style="margin-bottom:1rem">
+      «Сохранить черновик» не меняет сайт. Посетители увидят изменения только после кнопки «Опубликовать».
+    </p>
+    <dl class="facts">
+      <div><dt>Черновик сохранён</dt><dd data-draft-updated>{formatDate(draft.updatedAt)}</dd></div>
+      <div><dt>Опубликовано</dt><dd data-published-at>{formatDate(draft.publishedAt)}</dd></div>
+    </dl>
+    <div class="stack" style="gap:.6rem;margin-top:1.25rem">
+      {preview && <a class="button button--ghost" href={preview} target="_blank" rel="noopener">Предпросмотр черновика</a>}
+      <button class="button button--primary" type="button" data-doc-publish>Опубликовать</button>
+      <button class="button button--ghost" type="button" data-doc-discard hidden={!draft.pending}>Отменить черновик</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head"><h2 class="panel__title">Опубликованные версии</h2></div>
+    {
+      history.length === 0 ? (
+        <p class="muted">Здесь появятся предыдущие публикации.</p>
+      ) : (
+        <ul class="timeline-list" role="list">
+          {history.slice(0, 10).map((entry, index) => (
+            <li>
+              <span>
+                <time>{formatDate(entry.published_at)}</time>
+                {index === 0 && <span class="muted"> · текущая</span>}
+              </span>
+              {index > 0 && (
+                <button class="button button--ghost button--small" type="button" data-history={entry.id}>
+                  В черновик
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</aside>

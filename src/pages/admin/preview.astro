@@ -1,0 +1,15 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import HomeSections from '@/components/HomeSections.astro';
+import PreviewBar from '@/components/admin/PreviewBar.astro';
+import { buildSite } from '@/server/site';
+
+// Admin-only (the middleware requires a session). The homepage built from the drafts.
+const site = buildSite('draft');
+Astro.locals.site = site;
+---
+
+<BaseLayout title={`Предпросмотр: ${site.homepage.seo.title}`} description={site.homepage.seo.description} noindex>
+  <PreviewBar text="Главная с неопубликованными черновиками. Посетители видят опубликованную версию." back="/admin/homepage" />
+  <HomeSections />
+</BaseLayout>

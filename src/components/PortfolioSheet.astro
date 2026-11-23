@@ -1,0 +1,499 @@
+---
+import Icon from './Icon.astro';
+import ResponsiveImage from './ResponsiveImage.astro';
+import { getContent } from '@/data';
+import { publishedCards } from '@/server/site';
+
+/**
+ * The portfolio menu: «Портфолио» in the navigation opens it as a card over the homepage,
+ * right under the header; the page stays visible, dimmed, around it (on phones the card rises
+ * from the bottom and leaves the top of the page in view). Modelled on the portfolio panel of the CRVU site (a sheet with its own address,
+ * a filter and a grid of projects that open in a gallery), adapted to Business Stand.
+ *
+ * - Opens from any link with data-portfolio-open; without JavaScript those links lead to /projects/.
+ * - Gets #portfolio in the address, so the browser's Back button closes it and a link can open it.
+ * - Closes with its button, Esc, Back, a click on the dimmed page around it, or any navigation link — the header (with «Контакты»
+ *   and «Обсудить проект») stays usable the whole time.
+ * - A project opens in the project window (ProjectDialog) on top of the menu.
+ * It sits outside <main>: while it is open, the page behind it is inert.
+ */
+const { projectCategories, projectsSection } = getContent(Astro.currentLocale);
+const labels = projectsSection.menu;
+const projects = publishedCards();
+const categories = projectCategories.filter((category) => projects.some((project) => project.category === category.id));
+
+const plural = (n: number) => {
+  const [one, few, many] = labels.count;
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+};
+---
+
+{
+  projects.length > 0 && (
+    <section
+      class="portfolio-sheet"
+      id="portfolio-sheet"
+      aria-labelledby="portfolio-sheet-title"
+      tabindex="-1"
+      hidden
+      data-portfolio-sheet
+      data-scroll-lock
+      data-count-forms={JSON.stringify(labels.count)}
+    >
+      <div class="portfolio-sheet__panel" data-portfolio-panel>
+        <div class="portfolio-sheet__bar">
+          <div class="portfolio-sheet__heading">
+            <h2 class="portfolio-sheet__title" id="portfolio-sheet-title">{labels.title}</h2>
+            <p class="portfolio-sheet__count" aria-live="polite" data-portfolio-count>
+              {projects.length} {plural(projects.length)}
+            </p>
+          </div>
+          <button class="portfolio-sheet__close" type="button" data-portfolio-close>
+            <span>{labels.close}</span>
+            <Icon name="X" size={20} />
+          </button>
+        </div>
+
+        <div class="portfolio-sheet__body">
+          {
+            categories.length > 1 && (
+              <div class="portfolio-sheet__filters" role="group" aria-label={labels.filterLabel} data-portfolio-filters>
+                <button class="chip" type="button" aria-pressed="true" data-portfolio-filter="">
+                  {labels.all}
+                </button>
+                {categories.map((category) => (
+                  <button class="chip" type="button" aria-pressed="false" data-portfolio-filter={category.id}>
+                    {category.short}
+                  </button>
+                ))}
+              </div>
+            )
+          }
+
+          <ul class="portfolio-sheet__grid" role="list">
+            {
+              projects.map((project) => (
+                <li data-portfolio-item={project.category}>
+                  <a class="sheet-card" href={`/projects/${project.slug}/`} data-work-open={project.slug} aria-haspopup="dialog">
+                    <span class="sheet-card__media">
+                      <ResponsiveImage image={project.cover} sizes="(min-width: 1100px) 330px, (min-width: 640px) 45vw, 44vw" />
+                    </span>
+                    <span class="sheet-card__title">{project.title}</span>
+                    <span class="sheet-card__format">{project.categoryLabel}</span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+
+          <div class="portfolio-sheet__foot">
+            <a class="button button--primary" href="/#contact" data-portfolio-leave>
+              {labels.contact}
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  /* The layer: the homepage dimmed under the header, with the card on top of it. */
+  .portfolio-sheet {
+    position: fixed;
+    inset: var(--header-h) 0 0;
+    /* Under the header (z-index 100), so the header and its hanging logo stay on top and usable */
+    z-index: 90;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(1rem, 0.5rem + 1.5vw, 2rem) var(--gutter);
+    background: rgb(13 48 40 / 0.45);
+    opacity: 0;
+    transition: opacity 0.3s var(--ease);
+  }
+
+  .portfolio-sheet.is-open {
+    opacity: 1;
+  }
+
+  .portfolio-sheet:focus {
+    outline: none;
+  }
+
+  .portfolio-sheet__panel {
+    container-type: inline-size;
+    width: min(100%, 1040px);
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    background: var(--paper);
+    box-shadow:
+      0 2px 6px rgb(13 48 40 / 0.18),
+      0 32px 80px -24px rgb(13 48 40 / 0.6);
+    transform: translateY(1rem) scale(0.985);
+    transition: transform 0.4s var(--ease-out);
+  }
+
+  .portfolio-sheet.is-open .portfolio-sheet__panel {
+    transform: none;
+  }
+
+  /* Title on the left, close on the right: the logo hangs over the middle of this bar. */
+  .portfolio-sheet__bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 76px;
+    padding: 0.75rem clamp(1rem, 0.5rem + 2vw, 2rem);
+    background: var(--paper);
+    box-shadow: 0 1px 0 var(--line);
+  }
+
+  .portfolio-sheet__heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+  }
+
+  .portfolio-sheet__title {
+    font-family: var(--font-display);
+    font-size: var(--title-lg);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+    color: var(--forest);
+  }
+
+  .portfolio-sheet__count {
+    font-size: var(--text-sm);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .portfolio-sheet__close {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.1rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--paper-raised);
+    color: var(--forest);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    cursor: pointer;
+    transition: border-color 0.25s var(--ease);
+  }
+
+  .portfolio-sheet__close:hover {
+    border-color: var(--forest);
+  }
+
+  .portfolio-sheet__body {
+    padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1rem, 0.5rem + 2vw, 2rem) clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  }
+
+  .portfolio-sheet__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  }
+
+  .chip {
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: none;
+    color: var(--charcoal);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    cursor: pointer;
+    transition:
+      background-color 0.25s var(--ease),
+      border-color 0.25s var(--ease),
+      color 0.25s var(--ease);
+  }
+
+  .chip:hover {
+    border-color: var(--forest);
+  }
+
+  .chip[aria-pressed='true'] {
+    border-color: var(--forest);
+    background: var(--forest);
+    color: #fff;
+  }
+
+  /* Columns follow the card's own width, not the window's. */
+  .portfolio-sheet__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem clamp(0.75rem, 0.5rem + 1vw, 1.5rem);
+    margin: 0;
+    padding: 0;
+  }
+
+  @container (min-width: 820px) {
+    .portfolio-sheet__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .sheet-card {
+    display: grid;
+    gap: 0.25rem;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+  }
+
+  .sheet-card:focus-visible {
+    outline-offset: 5px;
+  }
+
+  .sheet-card__media {
+    display: block;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--grey);
+    aspect-ratio: 3 / 2;
+  }
+
+  .sheet-card__media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .sheet-card:hover .sheet-card__media :global(img) {
+    transform: scale(1.03);
+  }
+
+  .sheet-card__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+    font-weight: var(--weight-title);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+    color: var(--forest);
+    text-wrap: balance;
+  }
+
+  .sheet-card__format {
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .portfolio-sheet__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+    margin-top: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+
+  /* Phones: the card rises from the bottom and leaves the top of the page (and the logo) in view. */
+  @media (max-width: 639px) {
+    .portfolio-sheet {
+      align-items: flex-end;
+      padding: max(4.5rem, 14svh) 0 0;
+    }
+
+    .portfolio-sheet__panel {
+      width: 100%;
+      border-radius: 18px 18px 0 0;
+      transform: translateY(2rem);
+    }
+
+    .portfolio-sheet__bar {
+      min-height: 64px;
+    }
+
+    .portfolio-sheet__filters {
+      flex-wrap: nowrap;
+      margin-inline: calc(clamp(1rem, 0.5rem + 2vw, 2rem) * -1);
+      padding-inline: clamp(1rem, 0.5rem + 2vw, 2rem);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .portfolio-sheet__filters::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip {
+      flex-shrink: 0;
+    }
+
+    .portfolio-sheet__foot .button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .portfolio-sheet__count {
+      display: none;
+    }
+
+    .portfolio-sheet__close span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .portfolio-sheet__close {
+      width: 48px;
+      padding: 0;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const sheet = document.querySelector<HTMLElement>('[data-portfolio-sheet]');
+
+  if (sheet) {
+    const HASH = '#portfolio';
+    const background = document.querySelectorAll<HTMLElement>('main, .site-footer');
+    const count = sheet.querySelector<HTMLElement>('[data-portfolio-count]')!;
+    const forms = JSON.parse(sheet.dataset.countForms ?? '[]') as string[];
+    const panel = sheet.querySelector<HTMLElement>('[data-portfolio-panel]')!;
+    const items = [...sheet.querySelectorAll<HTMLElement>('[data-portfolio-item]')];
+    const filters = [...sheet.querySelectorAll<HTMLButtonElement>('[data-portfolio-filter]')];
+    const triggers = () => document.querySelectorAll<HTMLElement>('[data-portfolio-open]');
+    let opener: HTMLElement | null = null;
+    let hideTimer = 0;
+
+    const plural = (n: number) => {
+      const mod10 = n % 10;
+      const mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return forms[0];
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1];
+      return forms[2];
+    };
+
+    // Links that open the menu say so to assistive technology once JavaScript can open it.
+    triggers().forEach((link) => {
+      link.setAttribute('aria-controls', 'portfolio-sheet');
+      link.setAttribute('aria-expanded', 'false');
+    });
+
+    const isOpen = () => sheet.classList.contains('is-open');
+
+    const show = (trigger: HTMLElement | null) => {
+      window.clearTimeout(hideTimer);
+      opener = trigger;
+      sheet.hidden = false;
+      background.forEach((el) => (el.inert = true));
+      document.documentElement.style.overflow = 'hidden';
+      triggers().forEach((link) => link.setAttribute('aria-expanded', 'true'));
+      requestAnimationFrame(() => sheet.classList.add('is-open'));
+      panel.scrollTop = 0;
+      sheet.focus({ preventScroll: true });
+    };
+
+    /** restoreFocus: false when the menu closes because the visitor is going somewhere else. */
+    const hide = (restoreFocus = true) => {
+      if (!isOpen()) return;
+      sheet.classList.remove('is-open');
+      background.forEach((el) => (el.inert = false));
+      if (!document.querySelector('dialog[open]')) document.documentElement.style.overflow = '';
+      triggers().forEach((link) => link.setAttribute('aria-expanded', 'false'));
+      // Hidden after the closing transition (instantly when motion is reduced: it is 0.01ms then).
+      hideTimer = window.setTimeout(() => {
+        if (!isOpen()) sheet.hidden = true;
+      }, 400);
+      if (restoreFocus) opener?.focus({ preventScroll: true });
+      opener = null;
+    };
+
+    // Opening adds #portfolio to the address (Back closes the menu); closing removes it.
+    const open = (trigger: HTMLElement | null) => {
+      if (isOpen()) return;
+      if (location.hash !== HASH) history.pushState({ portfolio: true }, '', HASH);
+      show(trigger);
+    };
+
+    const close = (restoreFocus = true) => {
+      if (location.hash === HASH) history.replaceState(null, '', location.pathname + location.search);
+      hide(restoreFocus);
+    };
+
+    document.addEventListener('click', (event) => {
+      const mouse = event as MouseEvent;
+      if (mouse.defaultPrevented || mouse.button !== 0 || mouse.metaKey || mouse.ctrlKey || mouse.shiftKey || mouse.altKey) return;
+      const target = event.target as HTMLElement;
+
+      const trigger = target.closest<HTMLElement>('[data-portfolio-open]');
+      if (trigger) {
+        event.preventDefault();
+        // «Портфолио» in the header bar works as a toggle; elsewhere (the phone menu) it only opens.
+        if (isOpen() && !trigger.closest('.mobile-menu')) close();
+        else open(trigger);
+        return;
+      }
+
+      // Any other navigation link (header, mobile menu) or the menu's own links take the visitor
+      // somewhere else: the menu closes and the link does its usual job.
+      if (isOpen() && target.closest('.site-header a, [data-portfolio-leave]')) close(false);
+    });
+
+    sheet.querySelector('[data-portfolio-close]')!.addEventListener('click', () => close());
+
+    // A click on the dimmed page around the card closes it.
+    sheet.addEventListener('click', (event) => {
+      if (event.target === sheet) close();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      // Esc first closes a window opened on top of the menu (the browser handles that one).
+      if (event.key !== 'Escape' || !isOpen() || document.querySelector('dialog[open]')) return;
+      event.preventDefault();
+      close();
+    });
+
+    window.addEventListener('popstate', () => {
+      if (location.hash === HASH) show(null);
+      else hide(false);
+    });
+
+    filters.forEach((button) => {
+      button.addEventListener('click', () => {
+        const value = button.dataset.portfolioFilter ?? '';
+        filters.forEach((other) => other.setAttribute('aria-pressed', String(other === button)));
+        let shown = 0;
+        items.forEach((item) => {
+          const visible = !value || item.dataset.portfolioItem === value;
+          item.hidden = !visible;
+          if (visible) shown += 1;
+        });
+        count.textContent = `${shown} ${plural(shown)}`;
+      });
+    });
+
+    // A link straight to …#portfolio opens the menu.
+    if (location.hash === HASH) show(null);
+  }
+</script>

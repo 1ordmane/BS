@@ -1,0 +1,24 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import ServiceForm from '@/components/admin/ServiceForm.astro';
+import { NotFoundError } from '@/server/errors';
+import { getService } from '@/server/services';
+
+let service;
+try {
+  service = getService(Number(Astro.params.id));
+} catch (error) {
+  if (error instanceof NotFoundError) return Astro.rewrite('/404');
+  throw error;
+}
+---
+
+<AdminLayout title={service.title}>
+  <div class="admin-head">
+    <div>
+      <p class="crumbs"><a href="/admin/services">← Все услуги</a></p>
+      <h1>{service.title}</h1>
+    </div>
+  </div>
+  <ServiceForm service={service} />
+</AdminLayout>

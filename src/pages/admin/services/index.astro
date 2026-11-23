@@ -1,0 +1,103 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import Icon from '@/components/Icon.astro';
+import { getImageView } from '@/server/images';
+import { listServices } from '@/server/services';
+
+const services = listServices();
+---
+
+<AdminLayout title="Услуги">
+  <div class="admin-head">
+    <div>
+      <h1>Услуги</h1>
+      <p>Карточки раздела «Услуги» на главной. Порядок здесь — порядок на сайте; он сохраняется сразу.</p>
+    </div>
+    <div class="admin-head__actions">
+      <a class="button button--primary" href="/admin/services/new"><Icon name="Plus" size={16} /> Новая услуга</a>
+    </div>
+  </div>
+
+  <ul class="picklist" role="list" data-services>
+    {
+      services.map((service) => {
+        const image = getImageView(service.image_id);
+        return (
+          <li class="pick" data-pick data-id={service.id} draggable="true">
+            <span class="pick__handle" aria-hidden="true">⋮⋮</span>
+            {image ? <img src={image.thumb} alt="" /> : <span class="pick__noimg" />}
+            <span>
+              <a class="pick__title" href={`/admin/services/${service.id}`}>{service.title}</a>
+              <span class="pick__meta">{service.summary}</span>
+            </span>
+            <span class="pick__tools">
+              <label class="check" style="margin-right:.5rem">
+                <input type="checkbox" data-toggle checked={service.published === 1} />
+                <span>На сайте</span>
+              </label>
+              <button type="button" class="icon-button" data-up aria-label="Выше">↑</button>
+              <button type="button" class="icon-button" data-down aria-label="Ниже">↓</button>
+            </span>
+          </li>
+        );
+      })
+    }
+  </ul>
+  {services.length === 0 && <p class="empty">Услуг пока нет.</p>}
+</AdminLayout>
+
+<script>
+  import { api, sortable, toast } from '@/scripts/admin/core';
+
+  const list = document.querySelector<HTMLElement>('[data-services]');
+  if (list) {
+    const ids = () => Array.from(list.querySelectorAll<HTMLElement>('[data-pick]')).map((item) => Number(item.dataset.id));
+    let saved = ids();
+
+    const sync = () => {
+      const items = Array.from(list.querySelectorAll<HTMLElement>('[data-pick]'));
+      items.forEach((item, index) => {
+        item.querySelector<HTMLButtonElement>('[data-up]')!.disabled = index === 0;
+        item.querySelector<HTMLButtonElement>('[data-down]')!.disabled = index === items.length - 1;
+      });
+    };
+
+    const saveOrder = async () => {
+      sync();
+      const order = ids();
+      const result = await api('PUT', '/api/admin/services/order', { ids: order });
+      if (!result.ok) {
+        toast(result.error ?? 'Порядок не сохранён', 'error');
+        // Put the list back the way the server has it.
+        saved.forEach((id) => list.append(list.querySelector(`[data-id="${id}"]`)!));
+        sync();
+        return;
+      }
+      saved = order;
+      toast('Порядок сохранён');
+    };
+
+    sortable(list, '[data-pick]', saveOrder);
+    list.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button');
+      const item = button?.closest<HTMLElement>('[data-pick]');
+      if (!button || !item) return;
+      if (button.dataset.up !== undefined) item.previousElementSibling?.before(item);
+      if (button.dataset.down !== undefined) item.nextElementSibling?.after(item);
+      void saveOrder();
+      button.focus({ preventScroll: true });
+    });
+    list.addEventListener('change', async (event) => {
+      const box = event.target as HTMLInputElement;
+      if (box.dataset.toggle === undefined) return;
+      const id = box.closest<HTMLElement>('[data-pick]')!.dataset.id;
+      const result = await api('PATCH', `/api/admin/services/${id}`, { published: box.checked });
+      if (!result.ok) {
+        box.checked = !box.checked;
+        return toast(result.error ?? 'Не удалось', 'error');
+      }
+      toast(box.checked ? 'Услуга показана на сайте' : 'Услуга скрыта с сайта');
+    });
+    sync();
+  }
+</script>

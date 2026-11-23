@@ -1,0 +1,225 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import DocAside from '@/components/admin/DocAside.astro';
+import { formatBytes, formatDate } from '@/lib/format';
+import { listSessions } from '@/server/auth';
+import { listBackups } from '@/server/backup';
+import { dataDir } from '@/server/config';
+import { getDraft } from '@/server/content';
+
+const draft = getDraft('company');
+const company = draft.doc;
+const session = Astro.locals.session!;
+const sessions = listSessions(session.user.id);
+const backups = listBackups().slice(0, 8);
+---
+
+<AdminLayout title="Настройки">
+  <div class="admin-head">
+    <div>
+      <h1>Настройки</h1>
+      <p>Данные компании для шапки, подвала и блока контактов, вход и резервные копии.</p>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="stack">
+      <form class="stack" data-doc-form data-doc-key="company" data-version={draft.version} novalidate>
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title">Данные компании</h2>
+            <p class="panel__hint">Пустые контакты показываются на сайте пунктирной заглушкой.</p>
+          </div>
+          <div class="form-grid form-grid--2">
+            <div class="field">
+              <label for="co-name">Название</label>
+              <input id="co-name" type="text" name="name" value={company.name} data-max="80" />
+              <p class="field__error" data-error-for="name"></p>
+            </div>
+            <div class="field">
+              <label for="co-desc">Описание в подвале сайта</label>
+              <input id="co-desc" type="text" name="description" value={company.description} data-max="200" />
+              <p class="field__error" data-error-for="description"></p>
+            </div>
+            <div class="field">
+              <label for="co-phone">Телефон</label>
+              <input id="co-phone" type="text" name="phone" value={company.phone} placeholder="+7 (000) 000-00-00" />
+              <p class="field__error" data-error-for="phone"></p>
+            </div>
+            <div class="field">
+              <label for="co-email">Почта</label>
+              <input id="co-email" type="email" name="email" value={company.email} placeholder="info@company.ru" />
+              <p class="field__error" data-error-for="email"></p>
+            </div>
+            <div class="field field--wide">
+              <label for="co-address">Адрес</label>
+              <input id="co-address" type="text" name="address" value={company.address} placeholder="Город, улица, дом" />
+              <p class="field__error" data-error-for="address"></p>
+            </div>
+            <div class="field">
+              <label for="co-tg">Telegram</label>
+              <input id="co-tg" type="url" name="telegram" value={company.telegram} placeholder="https://t.me/…" />
+              <p class="field__error" data-error-for="telegram"></p>
+            </div>
+            <div class="field">
+              <label for="co-vk">VK</label>
+              <input id="co-vk" type="url" name="vk" value={company.vk} placeholder="https://vk.com/…" />
+              <p class="field__error" data-error-for="vk"></p>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title">Мессенджеры</h2>
+            <p class="panel__hint">Окно, которое открывают кнопки «Обсудить проект». Сообщение не отправляется само — посетитель видит его и отправляет сам.</p>
+          </div>
+          <div class="form-grid form-grid--2">
+            <div class="field">
+              <label for="co-mphone">Номер для WhatsApp и Telegram</label>
+              <input id="co-mphone" type="text" name="messengerPhone" value={company.messengerPhone} placeholder="+7 985 415-23-58" />
+              <p class="field__hint">WhatsApp открывает чат по номеру всегда. Telegram — только если в его настройках «Кто может найти меня по номеру» выбрано «Все».</p>
+              <p class="field__error" data-error-for="messengerPhone"></p>
+            </div>
+            <div class="field">
+              <label for="co-tgchat">Ссылка на Telegram (необязательно)</label>
+              <input id="co-tgchat" type="url" name="telegramChat" value={company.telegramChat} placeholder="https://t.me/username" />
+              <p class="field__hint">Если указана, кнопка Telegram ведёт по ней вместо номера. Надёжнее номера.</p>
+              <p class="field__error" data-error-for="telegramChat"></p>
+            </div>
+            <div class="field">
+              <label for="co-maxchat">Ссылка на профиль в MAX (необязательно)</label>
+              <input id="co-maxchat" type="url" name="maxChat" value={company.maxChat} placeholder="https://max.ru/u/…" />
+              <p class="field__hint">MAX не открывает чат по номеру. Скопируйте ссылку на профиль в приложении MAX (профиль → «Поделиться»). Пока поле пустое, посетителю показываются номер и текст для копирования.</p>
+              <p class="field__error" data-error-for="maxChat"></p>
+            </div>
+            <div class="field">
+              <label for="co-mtext">Готовое сообщение</label>
+              <textarea id="co-mtext" name="messengerText" rows="4" data-max="500">{company.messengerText}</textarea>
+              <p class="field__error" data-error-for="messengerText"></p>
+            </div>
+          </div>
+        </section>
+        <div class="savebar">
+          <span class="savebar__state" data-save-state data-clean-text="Черновик сохранён">Черновик сохранён</span>
+          <button class="button button--primary" type="button" data-doc-save>Сохранить черновик</button>
+        </div>
+      </form>
+
+      <section class="panel" data-password>
+        <div class="panel__head"><h2 class="panel__title">Пароль</h2></div>
+        <form class="form-grid form-grid--3" data-password-form novalidate>
+          <div class="field">
+            <label for="pw-current">Текущий пароль</label>
+            <input id="pw-current" type="password" name="current" autocomplete="current-password" />
+            <p class="field__error" data-error-for="current"></p>
+          </div>
+          <div class="field">
+            <label for="pw-next">Новый пароль</label>
+            <input id="pw-next" type="password" name="next" autocomplete="new-password" />
+            <p class="field__hint">Не короче 12 символов.</p>
+            <p class="field__error" data-error-for="password"></p>
+          </div>
+          <div class="field">
+            <label for="pw-repeat">Повторите</label>
+            <input id="pw-repeat" type="password" name="repeat" autocomplete="new-password" />
+            <p class="field__error" data-error-for="repeat"></p>
+          </div>
+          <div class="field--wide">
+            <button class="button button--primary" type="submit">Сменить пароль</button>
+            <span class="field__hint">Остальные устройства будут отключены.</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">Активные входы</h2>
+          <button class="button button--ghost button--small" type="button" data-end-sessions hidden={sessions.length < 2}>Выйти на других устройствах</button>
+        </div>
+        <ul class="timeline-list" role="list">
+          {
+            sessions.map((item) => (
+              <li>
+                <span>
+                  {item.id === session.id ? <strong>Это устройство</strong> : 'Другое устройство'}
+                  <br />
+                  <span class="muted" style="font-size:.75rem">{item.user_agent.slice(0, 90)}</span>
+                </span>
+                <time>{formatDate(item.last_seen_at)}</time>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">Резервные копии</h2>
+          <button class="button button--ghost button--small" type="button" data-backup>Создать копию сейчас</button>
+        </div>
+        <p class="field__hint" style="margin-bottom:1rem">
+          Копия включает базу данных, все фото и вложения заявок. Хранится на сервере в папке <code>{dataDir()}/backups</code>, последние 14 копий.
+          Регулярно переносите копии на другой носитель: копия на том же диске не спасёт при его поломке.
+        </p>
+        {
+          backups.length === 0 ? (
+            <p class="muted">Копий пока нет.</p>
+          ) : (
+            <ul class="timeline-list" role="list">
+              {backups.map((backup) => (
+                <li>
+                  <span>{backup.name}</span>
+                  <time>
+                    {formatDate(backup.createdAt)} · {formatBytes(backup.bytes)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </section>
+    </div>
+
+    <DocAside docKey="company" preview="/admin/preview#contact" />
+  </div>
+</AdminLayout>
+
+<script>
+  import '@/scripts/admin/doc-editor';
+  import { api, confirmDialog, serialize, showErrors, toast } from '@/scripts/admin/core';
+
+  const passwordForm = document.querySelector<HTMLFormElement>('[data-password-form]');
+  passwordForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const result = await api('POST', '/api/admin/settings/password', serialize(passwordForm));
+    if (!result.ok) {
+      showErrors(passwordForm, result.fields);
+      if (!result.fields) toast(result.error ?? 'Пароль не изменён', 'error');
+      return;
+    }
+    passwordForm.reset();
+    showErrors(passwordForm, {});
+    toast('Пароль изменён. Другие устройства отключены.');
+  });
+
+  document.querySelector('[data-end-sessions]')?.addEventListener('click', async () => {
+    const go = await confirmDialog({ title: 'Выйти на других устройствах?', text: 'Все входы, кроме этого, будут завершены.', confirm: 'Завершить' });
+    if (!go) return;
+    const result = await api('DELETE', '/api/admin/settings/sessions');
+    if (!result.ok) return toast(result.error ?? 'Не удалось', 'error');
+    window.location.reload();
+  });
+
+  document.querySelector<HTMLButtonElement>('[data-backup]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget as HTMLButtonElement;
+    button.disabled = true;
+    button.textContent = 'Создаём…';
+    const result = await api('POST', '/api/admin/settings/backup');
+    if (!result.ok) {
+      button.disabled = false;
+      button.textContent = 'Создать копию сейчас';
+      return toast(result.error ?? 'Копия не создана', 'error');
+    }
+    window.location.reload();
+  });
+</script>

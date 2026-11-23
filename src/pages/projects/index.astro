@@ -1,0 +1,21 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Portfolio from '@/components/Portfolio.astro';
+import { getContent } from '@/data';
+import { publishedCards } from '@/server/site';
+
+const { projectsSection } = getContent(Astro.currentLocale);
+const { homepage } = Astro.locals.site;
+---
+
+<BaseLayout title={projectsSection.catalogTitle} description={homepage.projects.text || homepage.seo.description}>
+  <div class="catalog">
+    <Portfolio projects={publishedCards()} as="h1" />
+  </div>
+</BaseLayout>
+
+<style>
+  .catalog {
+    padding-top: clamp(2rem, 1rem + 3vw, 4rem);
+  }
+</style>

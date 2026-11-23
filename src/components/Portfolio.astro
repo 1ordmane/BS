@@ -1,0 +1,217 @@
+---
+import ProjectCard from './ProjectCard.astro';
+import Icon from './Icon.astro';
+import { getContent } from '@/data';
+import type { ProjectCardView } from '@/server/site';
+
+interface Props {
+  projects: ProjectCardView[];
+  /** Heading level: h2 inside the homepage, h1 on the catalogue page. */
+  as?: 'h1' | 'h2';
+  /** Link to the full catalogue under the selection. */
+  allLink?: boolean;
+}
+
+const { projects, as: Heading = 'h2', allLink = false } = Astro.props;
+const { projectCategories, projectsSection: labels } = getContent(Astro.currentLocale);
+const projectsSection = { ...labels, ...Astro.locals.site.homepage.projects };
+
+// Only offer filters for formats that have at least one project.
+const categories = projectCategories.filter((category) =>
+  projects.some((project) => project.category === category.id),
+);
+
+// Alternating composition; repeats for longer portfolios.
+const pattern = [
+  { span: 'span-7', variant: 'tall', sizes: '(min-width: 1000px) 56vw, 92vw' },
+  { span: 'span-5 offset', variant: 'default', sizes: '(min-width: 1000px) 40vw, 92vw' },
+  { span: 'span-5', variant: 'default', sizes: '(min-width: 1000px) 40vw, 92vw' },
+  { span: 'span-7 offset', variant: 'wide', sizes: '(min-width: 1000px) 56vw, 92vw' },
+  { span: 'span-6', variant: 'default', sizes: '(min-width: 1000px) 48vw, 92vw' },
+  { span: 'span-6 offset', variant: 'default', sizes: '(min-width: 1000px) 48vw, 92vw' },
+];
+---
+
+<section class="portfolio section" id="projects" aria-labelledby="projects-title">
+  <div class="container">
+    <div class="section-head">
+      <Heading class="display display--md portfolio__title" id="projects-title" data-reveal>{projectsSection.title}</Heading>
+      {projectsSection.text && <p class="lead" data-reveal style="--reveal-delay: 0.1s">{projectsSection.text}</p>}
+    </div>
+
+    <div class="portfolio__filters" role="group" aria-label={projectsSection.filterLabel} data-filters hidden>
+      <button type="button" class="chip" aria-pressed="true" data-filter="all">{projectsSection.all}</button>
+      {
+        categories.map((category) => (
+          <button type="button" class="chip" aria-pressed="false" data-filter={category.id}>
+            {category.short}
+          </button>
+        ))
+      }
+    </div>
+    <p class="visually-hidden" aria-live="polite" data-filter-status></p>
+
+    <ul class="portfolio__grid" role="list" data-portfolio>
+      {
+        projects.map((project, index) => {
+          const slot = pattern[index % pattern.length]!;
+          return (
+            <li class={`portfolio__item ${slot.span}`} data-category={project.category} data-reveal style={`--reveal-delay: ${(index % 2) * 0.1}s`}>
+              <ProjectCard project={project} variant={slot.variant} sizes={slot.sizes} />
+            </li>
+          );
+        })
+      }
+    </ul>
+
+    {
+      allLink && (
+        <p class="portfolio__all">
+          <a class="button button--ghost" href="/projects/">
+            {labels.allProjects}
+            <Icon name="ArrowRight" size={18} />
+          </a>
+        </p>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .portfolio__title {
+    color: var(--forest);
+  }
+
+  .portfolio__notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    max-width: 52rem;
+    margin-bottom: 2rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--grey);
+    font-size: var(--text-sm);
+    color: var(--muted);
+  }
+
+  .portfolio__notice :global(.icon) {
+    flex-shrink: 0;
+    margin-top: 0.2em;
+    color: var(--emerald);
+  }
+
+  .portfolio__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: clamp(2.5rem, 2rem + 2vw, 4rem);
+  }
+
+  .portfolio__filters[hidden] {
+    display: none;
+  }
+
+  .chip {
+    min-height: 44px;
+    padding: 0.55rem 1.15rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: transparent;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    cursor: pointer;
+    transition:
+      background-color 0.3s var(--ease),
+      color 0.3s var(--ease),
+      border-color 0.3s var(--ease);
+  }
+
+  .chip:hover {
+    border-color: var(--emerald);
+    color: var(--emerald);
+  }
+
+  .chip[aria-pressed='true'] {
+    background: var(--forest);
+    border-color: var(--forest);
+    color: var(--ivory);
+  }
+
+  .portfolio__grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: clamp(3rem, 2rem + 3vw, 5rem) clamp(1rem, 0.5rem + 2vw, 2.5rem);
+  }
+
+  .portfolio__item {
+    grid-column: span 12;
+  }
+
+  .portfolio__item[hidden] {
+    display: none;
+  }
+
+  .portfolio__all {
+    margin-top: clamp(3rem, 2rem + 3vw, 5rem);
+  }
+
+  @media (min-width: 760px) {
+    .portfolio__item {
+      grid-column: span 6;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .portfolio__grid:not(.is-filtered) .span-7 {
+      grid-column: span 7;
+    }
+
+    .portfolio__grid:not(.is-filtered) .span-5 {
+      grid-column: span 5;
+    }
+
+    .portfolio__grid:not(.is-filtered) .span-6 {
+      grid-column: span 6;
+    }
+
+    /* Stagger the second card of each row to keep the composition editorial */
+    .portfolio__grid:not(.is-filtered) .offset {
+      margin-top: clamp(4rem, 2rem + 4vw, 7rem);
+    }
+  }
+</style>
+
+<script>
+  const filters = document.querySelector<HTMLElement>('[data-filters]');
+  const grid = document.querySelector<HTMLElement>('[data-portfolio]');
+  const status = document.querySelector<HTMLElement>('[data-filter-status]');
+
+  if (filters && grid && status) {
+    // Filters are only useful with JavaScript, so they stay hidden without it.
+    filters.hidden = false;
+    const buttons = Array.from(filters.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const items = Array.from(grid.querySelectorAll<HTMLElement>('[data-category]'));
+
+    filters.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-filter]');
+      if (!button) return;
+      const value = button.dataset.filter;
+
+      buttons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+      grid.classList.toggle('is-filtered', value !== 'all');
+
+      let shown = 0;
+      items.forEach((item) => {
+        const visible = value === 'all' || item.dataset.category === value;
+        item.hidden = !visible;
+        if (visible) {
+          shown += 1;
+          item.classList.add('is-visible');
+        }
+      });
+
+      status.textContent = `${button.textContent?.trim()}: ${shown}`;
+    });
+  }
+</script>

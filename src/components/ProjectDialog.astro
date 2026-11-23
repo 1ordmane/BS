@@ -1,0 +1,501 @@
+---
+import Icon from './Icon.astro';
+import ResponsiveImage from './ResponsiveImage.astro';
+import { getContent } from '@/data';
+import { getProject } from '@/server/projects';
+import { projectPage, publishedCards } from '@/server/site';
+
+/**
+ * The project window: photos and details of a published project, opened without leaving
+ * the page. Any element with data-work-open="<slug>" opens it (the homepage project hall,
+ * the portfolio menu). It sits outside <main>, so it stays usable while the portfolio menu
+ * makes the page behind inert. Without JavaScript those triggers are plain links to the
+ * project pages. Only facts filled in for a project are shown; nothing is invented.
+ */
+const { projectsSection: labels } = getContent(Astro.currentLocale);
+const viewer = labels.viewer;
+
+const items = publishedCards().map((card) => {
+  const row = getProject(card.id);
+  const page = row ? projectPage(row) : null;
+  const images = page ? [page.cover, ...page.gallery].filter((image) => image !== null) : card.cover ? [card.cover] : [];
+  const area = row?.area ? `${row.area}${/\d$/.test(row.area) ? ' м²' : ''}` : '';
+  const facts = [
+    { label: labels.labels.client, value: row?.client ?? '' },
+    { label: labels.labels.event, value: row?.event ?? '' },
+    { label: labels.labels.location, value: row?.location ?? '' },
+    { label: labels.labels.area, value: area },
+    { label: labels.labels.year, value: row?.year ?? '' },
+  ].filter((fact) => fact.value);
+  return { card, summary: row?.summary ?? '', images, facts, sections: page?.sections ?? [], scope: page?.scope ?? [] };
+});
+---
+
+<dialog class="work-dialog" aria-labelledby="work-dialog-title" data-work-dialog>
+  <div class="work-dialog__panel">
+    <button class="work-dialog__close" type="button" data-work-close>
+      <Icon name="X" size={22} />
+      <span class="visually-hidden">{viewer.close}</span>
+    </button>
+    <div class="work-dialog__body" data-work-body></div>
+  </div>
+</dialog>
+
+{
+  items.map(({ card, summary, images, facts, sections, scope }) => (
+    <template data-work-detail={card.slug}>
+      <div class="detail">
+        <div class="detail__gallery" data-gallery>
+          <div class="detail__track" tabindex="0" aria-label={labels.labels.gallery} data-gallery-track>
+            {images.map((image, n) => (
+              <figure class="detail__slide" aria-label={`${viewer.photo} ${n + 1} ${viewer.of} ${images.length}`}>
+                <ResponsiveImage image={image} sizes="(min-width: 1000px) 60vw, 100vw" />
+              </figure>
+            ))}
+          </div>
+          {images.length > 1 && (
+            <div class="detail__controls">
+              <button class="detail__arrow" type="button" data-gallery-prev>
+                <Icon name="ArrowLeft" size={20} />
+                <span class="visually-hidden">{viewer.previous}</span>
+              </button>
+              <span class="detail__count" aria-live="polite" data-gallery-count data-of={viewer.of}>
+                1 {viewer.of} {images.length}
+              </span>
+              <button class="detail__arrow" type="button" data-gallery-next>
+                <Icon name="ArrowRight" size={20} />
+                <span class="visually-hidden">{viewer.nextImage}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div class="detail__info">
+          <div class="detail__text">
+            <p class="detail__format">{card.categoryLabel}</p>
+            <h2 class="detail__title" id="work-dialog-title">{card.title}</h2>
+            {summary && <p class="detail__summary">{summary}</p>}
+
+            {facts.length > 0 && (
+              <dl class="detail__facts">
+                {facts.map((fact) => (
+                  <div>
+                    <dt>{fact.label}</dt>
+                    <dd>{fact.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
+            {sections.map((part) => (
+              <section class="detail__part">
+                {part.heading && <h3>{part.heading}</h3>}
+                {part.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+              </section>
+            ))}
+
+            {scope.length > 0 && (
+              <section class="detail__part">
+                <h3>{labels.labels.scope}</h3>
+                <ul class="detail__scope" role="list">
+                  {scope.map((item) => (
+                    <li>
+                      <Icon name="Check" size={16} strokeWidth={2} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+          </div>
+
+          <div class="detail__actions">
+            <a class="button button--primary" href="/#contact" data-messenger>{labels.cta}</a>
+            <a class="detail__page" href={`/projects/${card.slug}/`}>{viewer.page}</a>
+          </div>
+        </div>
+      </div>
+    </template>
+  ))
+}
+
+<style>
+  /* ---------- Detail window ---------- */
+
+  .work-dialog {
+    width: min(1240px, calc(100vw - 2rem));
+    max-width: none;
+    height: min(820px, calc(100dvh - 2rem));
+    max-height: none;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: var(--paper-raised);
+    color: var(--charcoal);
+    overflow: hidden;
+  }
+
+  .work-dialog::backdrop {
+    background: rgb(13 48 40 / 0.78);
+  }
+
+  .work-dialog[open] {
+    animation: dialog-in 0.35s var(--ease-out);
+  }
+
+  .work-dialog__panel {
+    position: relative;
+    height: 100%;
+  }
+
+  .work-dialog__body {
+    height: 100%;
+  }
+
+  .work-dialog__close {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--paper-raised);
+    color: var(--forest);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgb(13 48 40 / 0.18);
+    transition: background-color 0.25s var(--ease);
+  }
+
+  .work-dialog__close:hover {
+    background: #fff;
+  }
+
+  .detail {
+    display: grid;
+    height: 100%;
+  }
+
+  .detail__gallery {
+    position: relative;
+    min-height: 0;
+    background: var(--hall-deep);
+  }
+
+  .detail__track {
+    display: flex;
+    height: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .detail__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .detail__track:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: -4px;
+  }
+
+  .detail__slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+  }
+
+  .detail__slide :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .detail__controls {
+    position: absolute;
+    left: 50%;
+    bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem;
+    border-radius: 999px;
+    background: rgb(13 48 40 / 0.72);
+    color: #fff;
+    transform: translateX(-50%);
+  }
+
+  .detail__arrow {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .detail__arrow:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.14);
+  }
+
+  .detail__arrow:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .detail__count {
+    min-width: 4.5em;
+    font-size: var(--text-xs);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .detail__info {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .detail__text {
+    display: grid;
+    align-content: start;
+    gap: 1.25rem;
+    padding: clamp(1.5rem, 1rem + 2vw, 2.75rem);
+    padding-top: clamp(1.75rem, 1rem + 2vw, 3.25rem);
+  }
+
+  .detail__format {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-ui);
+    color: var(--emerald);
+  }
+
+  .detail__badge {
+    padding: 0.1rem 0.6rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .detail__title {
+    font-family: var(--font-display);
+    font-size: var(--display-sm);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-display);
+    color: var(--forest);
+    text-wrap: balance;
+  }
+
+  .detail__summary {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .detail__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 1rem 1.5rem;
+    padding-block: 1rem;
+    border-block: 1px solid var(--line);
+  }
+
+  .detail__facts dt {
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .detail__facts dd {
+    font-weight: var(--weight-ui);
+  }
+
+  .detail__part {
+    display: grid;
+    gap: 0.4rem;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+  }
+
+  .detail__part h3 {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--forest);
+  }
+
+  .detail__scope {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+  }
+
+  .detail__scope li {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+  }
+
+  .detail__scope :global(.icon) {
+    flex-shrink: 0;
+    color: var(--emerald);
+    transform: translateY(2px);
+  }
+
+  .detail__note {
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  /* The way to get in touch stays in view while the text scrolls. */
+  .detail__actions {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    margin-top: auto;
+    padding: 1rem clamp(1.5rem, 1rem + 2vw, 2.75rem);
+    border-top: 1px solid var(--line);
+    background: var(--paper-raised);
+  }
+
+  .detail__page {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--forest);
+    text-underline-offset: 0.25em;
+  }
+
+  @media (min-width: 900px) {
+    .detail {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    }
+
+    .detail__info {
+      overflow-y: auto;
+    }
+  }
+
+  @media (max-width: 899px) {
+    .work-dialog {
+      width: 100vw;
+      height: 100dvh;
+      border-radius: 0;
+    }
+
+    .work-dialog__body {
+      overflow-y: auto;
+    }
+
+    .detail {
+      height: auto;
+      min-height: 100%;
+      grid-template-rows: auto 1fr;
+    }
+
+    .detail__gallery {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('[data-work-dialog]');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  if (dialog) {
+    const body = dialog.querySelector<HTMLElement>('[data-work-body]')!;
+    let opener: HTMLElement | null = null;
+
+    const setupGallery = () => {
+      const track = body.querySelector<HTMLElement>('[data-gallery-track]');
+      const prev = body.querySelector<HTMLButtonElement>('[data-gallery-prev]');
+      const next = body.querySelector<HTMLButtonElement>('[data-gallery-next]');
+      const count = body.querySelector<HTMLElement>('[data-gallery-count]');
+      if (!track || !prev || !next || !count) return;
+      const total = track.children.length;
+      const of = count.dataset.of ?? '';
+      let shown = -1;
+
+      const update = () => {
+        const index = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+        if (index === shown) return;
+        shown = index;
+        count.textContent = `${index + 1} ${of} ${total}`;
+        prev.disabled = index === 0;
+        next.disabled = index === total - 1;
+      };
+      const step = (direction: number) =>
+        track.scrollBy({ left: direction * track.clientWidth, behavior: reduced.matches ? 'auto' : 'smooth' });
+
+      prev.addEventListener('click', () => step(-1));
+      next.addEventListener('click', () => step(1));
+      track.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+      update();
+    };
+
+    const open = (slug: string, trigger: HTMLElement) => {
+      const template = document.querySelector<HTMLTemplateElement>(`template[data-work-detail="${CSS.escape(slug)}"]`);
+      if (!template) return false;
+      body.replaceChildren(template.content.cloneNode(true));
+      opener = trigger;
+      document.documentElement.style.overflow = 'hidden';
+      dialog.showModal();
+      setupGallery();
+      return true;
+    };
+
+    document.addEventListener('click', (event) => {
+      const mouse = event as MouseEvent;
+      if (mouse.defaultPrevented || mouse.button !== 0 || mouse.metaKey || mouse.ctrlKey || mouse.shiftKey || mouse.altKey) return;
+      const trigger = (event.target as HTMLElement).closest<HTMLElement>('[data-work-open]');
+      if (!trigger) return;
+      // A modified click still opens the project page in a new tab; a plain one opens the window.
+      if (open(trigger.dataset.workOpen ?? '', trigger)) event.preventDefault();
+    });
+
+    dialog.querySelector('[data-work-close]')!.addEventListener('click', () => dialog.close());
+
+    dialog.addEventListener('click', (event) => {
+      // A click on the dimmed area around the panel closes the window.
+      if (event.target === dialog) return dialog.close();
+      // «Обсудить похожий проект» hands over to the messenger window.
+      if ((event.target as HTMLElement).closest('[data-messenger]')) {
+        opener = null;
+        dialog.close();
+      }
+    });
+
+    dialog.addEventListener('close', () => {
+      // Another window (the messenger one) or the portfolio menu may still need the page held still.
+      if (!document.querySelector('dialog[open], [data-scroll-lock].is-open')) document.documentElement.style.overflow = '';
+      opener?.focus({ preventScroll: true });
+      opener = null;
+      body.replaceChildren();
+    });
+  }
+</script>

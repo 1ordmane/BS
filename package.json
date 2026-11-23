@@ -1,0 +1,37 @@
+{
+  "name": "business-stand-site",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сайт BUSINESS STAND — проектирование, производство и застройка выставочных стендов",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env node_modules/astro/bin/astro.mjs dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "start": "node ./dist/server/entry.mjs",
+    "admin:create": "node --disable-warning=ExperimentalWarning scripts/admin-create.ts",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.ts",
+    "restore": "node --disable-warning=ExperimentalWarning scripts/restore.ts",
+    "test": "node --disable-warning=ExperimentalWarning --test \"tests/unit/**/*.test.ts\"",
+    "test:http": "astro build && node --disable-warning=ExperimentalWarning --test \"tests/http/**/*.test.ts\"",
+    "test:e2e": "node --disable-warning=ExperimentalWarning tests/e2e/gallery.e2e.ts && node --disable-warning=ExperimentalWarning tests/e2e/workflow.e2e.ts",
+    "export:html": "node --disable-warning=ExperimentalWarning scripts/export-standalone.ts"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.1.9",
+    "@fontsource-variable/commissioner": "^5.3.0",
+    "@fontsource-variable/onest": "^5.3.1",
+    "astro": "^7.4.2",
+    "lucide-static": "^1.61.0",
+    "nodemailer": "^10.3.1",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@types/node": "^24.19.2",
+    "@types/nodemailer": "^8.0.2",
+    "playwright-core": "^1.64.1",
+    "typescript": "^5.9.3"
+  }
+}

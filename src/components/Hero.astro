@@ -1,0 +1,208 @@
+---
+import ResponsiveImage from './ResponsiveImage.astro';
+
+/**
+ * Opening screen: the headline under the hanging logo, one line on what the company does,
+ * the two actions, and the hero photo. The photo's lower part reaches into the dark
+ * project hall that follows (see ProjectShowcase), so the page leads straight into the work.
+ */
+interface Props {
+  /** True when the project hall follows; otherwise the photo ends the section on its own. */
+  intoHall?: boolean;
+}
+
+const { intoHall = true } = Astro.props;
+const { homepage, images } = Astro.locals.site;
+const { hero } = homepage;
+const opensMessenger = hero.primaryHref === '/#contact' || hero.primaryHref === '#contact';
+// The actions sit beside the headline's last line only when that line is short enough
+// to leave room for them; a longer line (edited in the admin) puts them underneath.
+const beside = (hero.lines.at(-1)?.length ?? 0) <= 14 && hero.lines.length > 1;
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class:list={['container hero__head', { 'hero__head--beside': beside }]}>
+    <h1 class="hero__title" id="hero-title">
+      {hero.lines.map((line) => <span class="hero__line">{line} </span>)}
+    </h1>
+    <p class="hero__lead">{hero.text}</p>
+    <div class="hero__actions">
+      <a class="button button--primary" href={hero.primaryHref} data-messenger={opensMessenger ? '' : undefined}>{hero.primaryLabel}</a>
+      {hero.secondaryLabel && <a class="hero__secondary" href={hero.secondaryHref}>{hero.secondaryLabel}</a>}
+    </div>
+  </div>
+
+  {
+    images.hero && (
+      <div class:list={['container hero__stage', { 'hero__stage--into-hall': intoHall }]}>
+        <figure class="hero__figure">
+          <ResponsiveImage
+            image={images.hero}
+            sizes="(min-width: 1400px) 1320px, 96vw"
+            loading="eager"
+            fetchpriority="high"
+            class="hero__image"
+          />
+        </figure>
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .hero {
+    /* Clears the logo that hangs below the header bar */
+    padding-top: clamp(4.5rem, 2.5rem + 5vw, 8rem);
+  }
+
+  .hero__head {
+    display: grid;
+    gap: clamp(1.25rem, 0.8rem + 1.2vw, 2rem) 3rem;
+  }
+
+  .hero__title {
+    font-family: var(--font-display);
+    font-size: var(--display-xl);
+    font-weight: var(--weight-hero);
+    line-height: 0.94;
+    letter-spacing: -0.042em;
+    color: var(--forest);
+    text-wrap: balance;
+  }
+
+  .hero__line {
+    display: block;
+    animation: hero-rise 1s var(--ease-out) both;
+  }
+
+  .hero__line:nth-child(2) {
+    animation-delay: 0.07s;
+  }
+
+  .hero__line:nth-child(3) {
+    animation-delay: 0.14s;
+  }
+
+  .hero__line:nth-child(4) {
+    animation-delay: 0.21s;
+  }
+
+  .hero__lead,
+  .hero__actions {
+    animation: hero-rise 1s var(--ease-out) 0.25s both;
+  }
+
+  .hero__lead {
+    max-width: 27rem;
+    font-size: var(--text-lg);
+    line-height: 1.45;
+    color: var(--charcoal);
+    text-wrap: pretty;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.75rem;
+  }
+
+  .hero__secondary {
+    padding-block: 0.6rem;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    color: var(--forest);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line-strong);
+    transition: border-color 0.25s var(--ease);
+  }
+
+  .hero__secondary:hover {
+    border-color: var(--forest);
+  }
+
+  /* Wide screens: the lead runs under the headline; the actions stand at the right,
+     beside the headline's last line when it is short, otherwise beside the lead. */
+  @media (min-width: 1000px) {
+    .hero__head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+
+    .hero__title {
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
+
+    .hero__lead {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .hero__actions {
+      grid-column: 2;
+      grid-row: 2;
+      justify-self: end;
+    }
+
+    .hero__head--beside .hero__actions {
+      grid-row: 1;
+      /* Level with the lower part of the headline's last line */
+      padding-bottom: 0.6rem;
+    }
+  }
+
+  /* ---------- Photo, reaching into the project hall ---------- */
+
+  .hero__stage {
+    position: relative;
+    z-index: 1;
+    margin-top: clamp(2.5rem, 1.5rem + 3vw, 4.5rem);
+  }
+
+  .hero__stage--into-hall {
+    margin-bottom: calc(var(--hero-overlap) * -1);
+  }
+
+  .hero__figure {
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--grey);
+    aspect-ratio: 16 / 7;
+    animation: hero-open 1.4s var(--ease-out) 0.15s both;
+  }
+
+  .hero__figure :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 60% 55%;
+  }
+
+  @media (max-width: 999px) {
+    .hero__figure {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.4em);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* The photo opens upwards like a curtain rising on a stand. */
+  @keyframes hero-open {
+    from {
+      clip-path: inset(100% 0 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+</style>

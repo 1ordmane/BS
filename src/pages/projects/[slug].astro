@@ -1,0 +1,24 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectDetail from '@/components/ProjectDetail.astro';
+import { findPublishedBySlug } from '@/server/projects';
+import { projectPage } from '@/server/site';
+
+const slug = Astro.params.slug ?? '';
+const { project, movedTo } = findPublishedBySlug(slug);
+
+// A project whose address changed keeps working at its old address.
+if (movedTo) return Astro.redirect(`/projects/${movedTo}/`, 301);
+if (!project) return Astro.rewrite('/404');
+
+const view = projectPage(project);
+const { company } = Astro.locals.site;
+---
+
+<BaseLayout
+  title={project.seo_title || `${project.title} — ${company.name}`}
+  description={project.seo_description || project.summary}
+  ogImage={view.cover?.og}
+>
+  <ProjectDetail view={view} />
+</BaseLayout>

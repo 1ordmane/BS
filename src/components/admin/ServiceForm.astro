@@ -1,0 +1,98 @@
+---
+import MediaField from './MediaField.astro';
+import { getImageView } from '@/server/images';
+import type { ServiceRow } from '@/server/services';
+
+interface Props {
+  service?: ServiceRow;
+}
+
+const { service } = Astro.props;
+---
+
+<form class="stack" data-service-form data-id={service?.id} novalidate>
+  <section class="panel">
+    <div class="form-grid form-grid--2">
+      <div class="field">
+        <label for="sv-title">Название</label>
+        <input id="sv-title" type="text" name="title" value={service?.title ?? ''} data-max="80" />
+        <p class="field__error" data-error-for="title"></p>
+      </div>
+      <div class="field">
+        <label for="sv-anchor">Якорь на главной</label>
+        <input id="sv-anchor" type="text" name="anchor" value={service?.anchor ?? ''} placeholder="заполнится из названия" />
+        <p class="field__hint">Ссылка вида /#service-design ведёт к этой карточке. Меняйте осторожно: старые ссылки перестанут вести к ней.</p>
+        <p class="field__error" data-error-for="anchor"></p>
+      </div>
+      <div class="field field--wide">
+        <label for="sv-summary">Короткое описание на карточке</label>
+        <input id="sv-summary" type="text" name="summary" value={service?.summary ?? ''} data-max="160" />
+        <p class="field__error" data-error-for="summary"></p>
+      </div>
+      <div class="field field--wide">
+        <label for="sv-details">Подробное описание (необязательно)</label>
+        <textarea id="sv-details" name="details" rows="4" data-max="2000">{service?.details ?? ''}</textarea>
+        <p class="field__hint">Сейчас на сайте не выводится: в дизайне карточки услуги только название и короткое описание. Можно подготовить заранее.</p>
+      </div>
+      <MediaField label="Изображение карточки" name="image_id" image={getImageView(service?.image_id)} hint="Горизонтальное фото, не меньше 1440 пикселей по ширине." />
+      <label class="check field--wide">
+        <input type="checkbox" name="published" checked={service ? service.published === 1 : false} />
+        <span>Показывать на сайте</span>
+      </label>
+    </div>
+  </section>
+  <div class="savebar">
+    <span class="savebar__state" data-save-state data-clean-text={service ? 'Сохранено' : 'Услуга ещё не создана'}>{service ? 'Сохранено' : 'Услуга ещё не создана'}</span>
+    {service && <button class="button button--danger" type="button" data-service-delete>Удалить</button>}
+    <button class="button button--primary" type="button" data-service-save>{service ? 'Сохранить' : 'Создать услугу'}</button>
+  </div>
+</form>
+
+<script>
+  import '@/scripts/admin/media-picker';
+  import { api, confirmDialog, initCounters, serialize, showErrors, toast, trackChanges } from '@/scripts/admin/core';
+
+  const form = document.querySelector<HTMLFormElement>('[data-service-form]');
+  if (form) {
+    const id = form.dataset.id;
+    const changes = trackChanges(form, form.querySelector('[data-save-state]'));
+    initCounters(form);
+    form.addEventListener('submit', (event) => event.preventDefault());
+
+    const save = async () => {
+      const result = id
+        ? await api<{ service: { id: number } }>('PUT', `/api/admin/services/${id}`, { data: serialize(form) })
+        : await api<{ service: { id: number } }>('POST', '/api/admin/services', { data: serialize(form) });
+      if (!result.ok) {
+        showErrors(form, result.fields);
+        changes.error('Не сохранено');
+        return toast(result.error ?? 'Не удалось сохранить', 'error');
+      }
+      showErrors(form, {});
+      changes.markSaved();
+      if (!id) return window.location.assign(`/admin/services/${result.data.service.id}`);
+      toast('Сохранено. Изменения уже на сайте, если услуга показывается.');
+    };
+
+    form.querySelector('[data-service-save]')!.addEventListener('click', () => void save());
+    document.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        void save();
+      }
+    });
+    form.querySelector('[data-service-delete]')?.addEventListener('click', async () => {
+      const go = await confirmDialog({
+        title: 'Удалить услугу?',
+        text: 'Карточка исчезнет с сайта. Изображение останется в медиатеке. Чтобы лишь скрыть услугу, снимите галочку «Показывать на сайте».',
+        confirm: 'Удалить',
+        danger: true,
+      });
+      if (!go) return;
+      const result = await api('DELETE', `/api/admin/services/${id}`);
+      if (!result.ok) return toast(result.error ?? 'Не удалось', 'error');
+      changes.markSaved();
+      window.location.assign('/admin/services');
+    });
+  }
+</script>

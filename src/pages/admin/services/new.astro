@@ -1,0 +1,14 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import ServiceForm from '@/components/admin/ServiceForm.astro';
+---
+
+<AdminLayout title="Новая услуга">
+  <div class="admin-head">
+    <div>
+      <p class="crumbs"><a href="/admin/services">← Все услуги</a></p>
+      <h1>Новая услуга</h1>
+    </div>
+  </div>
+  <ServiceForm />
+</AdminLayout>

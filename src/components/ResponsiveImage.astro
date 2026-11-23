@@ -1,0 +1,33 @@
+---
+import type { ImageView } from '@/server/images';
+
+/** An uploaded image, served in several widths so each screen downloads only what it needs. */
+interface Props {
+  image: ImageView | null;
+  sizes: string;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'auto';
+  class?: string;
+}
+
+// The rest carries Astro's style-scope attribute, so parents can style the <img> directly.
+const { image, sizes, loading = 'lazy', fetchpriority, class: className, ...rest } = Astro.props;
+---
+
+{
+  image && (
+    <img
+      class={className}
+      src={image.src}
+      srcset={image.srcset}
+      sizes={sizes}
+      width={image.width}
+      height={image.height}
+      alt={image.alt}
+      loading={loading}
+      decoding="async"
+      fetchpriority={fetchpriority}
+      {...rest}
+    />
+  )
+}

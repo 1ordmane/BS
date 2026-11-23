@@ -1,0 +1,216 @@
+---
+import InquiryForm from './InquiryForm.astro';
+import MessengerIcon from './MessengerIcon.astro';
+import { getContent } from '@/data';
+import { contactChannels } from '@/data/contacts';
+import { messengerLinks } from '@/data/messengers';
+
+/**
+ * The end of the page: an invitation to talk, the quickest ways to do it (messengers, set in
+ * Настройки → Мессенджеры), the company's contact details and the inquiry form.
+ */
+const { homepage, company } = Astro.locals.site;
+const contact = homepage.contact;
+const labels = getContent(Astro.currentLocale).contact;
+// Only the contact details filled in under Настройки; empty ones are left out.
+const channels = contactChannels(company).filter((channel) => channel.value);
+const links = messengerLinks(company);
+// MAX has no chat link by number: its button opens the messenger window with the number to copy.
+const offersMax = Boolean(links.max) || links.phoneDigits.length >= 10;
+const hasMessengers = Boolean(links.telegram || links.whatsapp || offersMax);
+---
+
+<section class="contact" id="contact" aria-labelledby="contact-title">
+  <div class="container contact__grid">
+    <div class="contact__intro">
+      <h2 class="contact__title" id="contact-title">{contact.title}</h2>
+      {contact.text && <p class="contact__lead">{contact.text}</p>}
+
+      {
+        hasMessengers && (
+          <div class="contact__quick">
+            <p class="contact__label">{labels.messengersTitle}</p>
+            <ul class="contact__messengers" role="list">
+              {links.telegram && (
+                <li>
+                  <a class="messenger-link" href={links.telegram} target="_blank" rel="noopener noreferrer">
+                    <MessengerIcon name="telegram" size={22} />
+                    Telegram
+                  </a>
+                </li>
+              )}
+              {links.whatsapp && (
+                <li>
+                  <a class="messenger-link" href={links.whatsapp} target="_blank" rel="noopener noreferrer">
+                    <MessengerIcon name="whatsapp" size={22} />
+                    WhatsApp
+                  </a>
+                </li>
+              )}
+              {offersMax && (
+                <li>
+                  <button class="messenger-link" type="button" data-messenger aria-haspopup="dialog">
+                    <MessengerIcon name="max" size={22} />
+                    MAX
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
+        )
+      }
+
+      {
+        channels.length > 0 && (
+          <dl class="contact__channels">
+            {channels.map((channel) => (
+              <div class="contact__channel">
+                <dt>{channel.label}</dt>
+                <dd>{channel.href ? <a href={channel.href}>{channel.value}</a> : channel.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }
+    </div>
+
+    <div class="contact__form">
+      <h3 class="contact__form-title">{labels.formTitle}</h3>
+      <InquiryForm />
+    </div>
+  </div>
+</section>
+
+<style>
+  .contact {
+    background: var(--hall);
+    color: var(--on-dark);
+    padding-block: clamp(4.5rem, 3rem + 5vw, 8rem);
+  }
+
+  .contact__grid {
+    display: grid;
+    gap: clamp(2.5rem, 2rem + 3vw, 4.5rem);
+  }
+
+  @media (min-width: 1100px) {
+    .contact__grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      align-items: start;
+    }
+  }
+
+  .contact__title {
+    max-width: 10em;
+    font-family: var(--font-display);
+    font-size: var(--display-md);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-display);
+    color: #fff;
+    text-wrap: balance;
+  }
+
+  .contact__lead {
+    max-width: 26rem;
+    margin-top: 1.25rem;
+    font-size: var(--text-lg);
+    line-height: 1.5;
+    color: var(--on-dark-muted);
+  }
+
+  .contact__quick {
+    margin-top: clamp(2rem, 1.5rem + 2vw, 3rem);
+  }
+
+  .contact__label {
+    margin-bottom: 0.85rem;
+    font-size: var(--text-sm);
+    color: var(--on-dark-muted);
+  }
+
+  .contact__messengers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0;
+  }
+
+  .messenger-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 52px;
+    padding: 0 1.25rem 0 0.9rem;
+    border: 1px solid rgb(243 241 234 / 0.3);
+    border-radius: 999px;
+    background: none;
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.25s var(--ease),
+      border-color 0.25s var(--ease);
+  }
+
+  .messenger-link:hover {
+    border-color: rgb(243 241 234 / 0.7);
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  .messenger-link:focus-visible {
+    outline-color: var(--mint);
+  }
+
+  .contact__channels {
+    display: grid;
+    max-width: 28rem;
+    margin-top: clamp(2rem, 1.5rem + 2vw, 3rem);
+  }
+
+  .contact__channel {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.9rem;
+    border-top: 1px solid var(--line-on-dark);
+    font-size: var(--text-sm);
+  }
+
+  .contact__channel:last-child {
+    border-bottom: 1px solid var(--line-on-dark);
+  }
+
+  .contact__channel dt {
+    color: var(--on-dark-muted);
+  }
+
+  .contact__channel dd {
+    font-weight: var(--weight-ui);
+    text-align: right;
+  }
+
+  .contact__channel a {
+    color: #fff;
+  }
+
+  .contact__form {
+    padding: clamp(1.5rem, 0.8rem + 2.6vw, 3rem);
+    border-radius: 10px;
+    background: var(--paper-raised);
+    color: var(--charcoal);
+  }
+
+  .contact__form-title {
+    margin-bottom: 1.75rem;
+    font-family: var(--font-display);
+    font-size: var(--title-lg);
+    font-weight: var(--weight-title);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+    color: var(--forest);
+  }
+</style>

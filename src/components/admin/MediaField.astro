@@ -1,0 +1,47 @@
+---
+import type { ImageView } from '@/server/images';
+
+/** Picks an image from the media library (or uploads a new one) for a content field. */
+interface Props {
+  label: string;
+  name: string;
+  image: ImageView | null;
+  altName?: string;
+  alt?: string;
+  hint?: string;
+}
+
+const { label, name, image, altName, alt = '', hint } = Astro.props;
+const id = name.replace(/\W/g, '-');
+---
+
+<div class="field field--wide" data-media-field>
+  <span class="field__label">{label}</span>
+  <div class="media-field">
+    <div class="media-field__preview" data-media-preview>
+      {image ? <img src={image.thumb} alt="" /> : <span>Нет изображения</span>}
+    </div>
+    <div class="stack" style="gap:.6rem">
+      <input type="hidden" name={name} value={image?.id ?? ''} data-media-value />
+      <div class="media-field__buttons">
+        <button class="button button--ghost button--small" type="button" data-media-choose>Выбрать из медиатеки</button>
+        <label class="button button--ghost button--small" style="cursor:pointer">
+          Загрузить новое
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden data-media-upload data-ignore />
+        </label>
+        <button class="button button--ghost button--small" type="button" data-media-clear hidden={!image}>Убрать</button>
+      </div>
+      <progress max="1" value="0" hidden data-media-progress style="width:100%"></progress>
+      {
+        altName && (
+          <div class="field">
+            <label for={`${id}-alt`}>Описание изображения (для незрячих и поисковиков)</label>
+            <input id={`${id}-alt`} type="text" name={altName} value={alt} data-max="200" />
+          </div>
+        )
+      }
+      {hint && <p class="field__hint">{hint}</p>}
+      <p class="field__error" data-error-for={name}></p>
+    </div>
+  </div>
+</div>

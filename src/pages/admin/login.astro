@@ -1,0 +1,89 @@
+---
+import '@/styles/global.css';
+import '@/styles/admin.css';
+import { authenticate, countUsers, createSession } from '@/server/auth';
+import { secureCookies, session as sessionConfig } from '@/server/config';
+import { logActivity } from '@/server/db';
+import { UserError } from '@/server/errors';
+import { clientIp } from '@/server/http';
+
+// Only paths inside the admin panel are allowed as a return address (no open redirects).
+const safeNext = (value: unknown) => {
+  const next = typeof value === 'string' ? value : '';
+  return /^\/admin(\/[^\s]*)?$/.test(next) && !next.startsWith('//') ? next : '/admin';
+};
+
+let next = safeNext(Astro.url.searchParams.get('next'));
+if (Astro.locals.session) return Astro.redirect(next);
+
+let error = '';
+let email = '';
+const hasUsers = countUsers() > 0;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  email = String(form.get('email') ?? '').slice(0, 200);
+  next = safeNext(form.get('next'));
+  try {
+    const user = authenticate(email, String(form.get('password') ?? ''), clientIp(Astro.request, Astro.clientAddress));
+    const { token } = createSession(user.id, Astro.request.headers.get('user-agent') ?? '');
+    Astro.cookies.set(sessionConfig.cookie, token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: secureCookies(Astro.url.hostname),
+      maxAge: sessionConfig.maxAgeMs / 1000,
+    });
+    logActivity(user.id, 'login', 'Вход в админ-панель');
+    return Astro.redirect(next, 303);
+  } catch (e) {
+    error = e instanceof UserError ? e.message : 'Не удалось войти. Попробуйте ещё раз.';
+    Astro.response.status = e instanceof UserError ? e.status : 500;
+  }
+}
+---
+
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Вход — админ-панель BUSINESS STAND</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main class="login admin" style="display:grid">
+      <form class="login__card" method="post" action="/admin/login">
+        <div class="login__brand">
+          <img src="/logo/logo-poster.webp" alt="" width="56" height="56" />
+          <div>
+            <h1>Админ-панель</h1>
+            <p class="muted">BUSINESS STAND</p>
+          </div>
+        </div>
+
+        {
+          !hasUsers && (
+            <p class="notice notice--info">
+              Администратор ещё не создан. Выполните на сервере в папке сайта команду <code>npm run admin:create</code>.
+            </p>
+          )
+        }
+        {error && <p class="notice notice--danger" role="alert">{error}</p>}
+
+        <input type="hidden" name="next" value={next} />
+        <div class="field">
+          <label for="login-email">Логин</label>
+          <input id="login-email" name="email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value={email} autofocus={!email} />
+        </div>
+        <div class="field">
+          <label for="login-password">Пароль</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required autofocus={!!email} />
+        </div>
+        <button class="button button--primary" type="submit">Войти</button>
+        <a class="muted" href="/">← На сайт</a>
+      </form>
+    </main>
+  </body>
+</html>

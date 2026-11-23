@@ -1,0 +1,296 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import DocAside from '@/components/admin/DocAside.astro';
+import MediaField from '@/components/admin/MediaField.astro';
+import { ru } from '@/data/ru';
+import { HIGHLIGHT_ICONS, getDraft, readFeatured } from '@/server/content';
+import { all } from '@/server/db';
+import { getImageView } from '@/server/images';
+import type { ProjectRow } from '@/server/projects';
+import { HOMEPAGE_PROJECTS } from '@/server/site';
+
+const draft = getDraft('homepage');
+const doc = draft.doc;
+const projects = all<ProjectRow>('SELECT * FROM projects ORDER BY title COLLATE NOCASE');
+const byId = new Map(projects.map((p) => [p.id, p]));
+const selected = readFeatured('draft')
+  .map((id) => byId.get(id))
+  .filter((p): p is ProjectRow => !!p);
+const selectedIds = new Set(selected.map((p) => p.id));
+const published = projects.filter((p) => p.status === 'published');
+const categoryLabel = (id: string) => ru.projectCategories.find((c) => c.id === id)?.label ?? '';
+const thumb = (p: ProjectRow) => getImageView(p.cover_image_id)?.thumb ?? '';
+
+const iconLabels: Record<string, string> = {
+  DraftingCompass: 'Циркуль',
+  Construction: 'Конструкция',
+  Workflow: 'Процесс',
+  Ruler: 'Линейка',
+  PenTool: 'Перо',
+  Layers: 'Слои',
+  Box: 'Объём',
+  Hammer: 'Молоток',
+  Lightbulb: 'Свет',
+  Truck: 'Доставка',
+  Presentation: 'Презентация',
+  Handshake: 'Рукопожатие',
+};
+---
+
+<AdminLayout title="Главная страница">
+  <div class="admin-head">
+    <div>
+      <h1>Главная страница</h1>
+      <p>Первый экран, карточки, заголовки разделов, подборка проектов и блок контактов.</p>
+    </div>
+  </div>
+
+  <div class="split">
+    <form class="stack" data-doc-form data-doc-key="homepage" data-version={draft.version} novalidate>
+      <section class="panel">
+        <div class="panel__head"><h2 class="panel__title">Первый экран</h2></div>
+        <div class="form-grid form-grid--2">
+          <div class="field">
+            <label for="h-lines">Заголовок</label>
+            <textarea id="h-lines" name="hero.lines" rows="4">{doc.hero.lines.join('\n')}</textarea>
+            <p class="field__hint">Каждая строка — отдельная строка заголовка на сайте. До 4 строк по 40 символов.</p>
+            <p class="field__error" data-error-for="hero.lines"></p>
+          </div>
+          <div class="field">
+            <label for="h-text">Подзаголовок</label>
+            <textarea id="h-text" name="hero.text" rows="4" data-max="200">{doc.hero.text}</textarea>
+            <p class="field__error" data-error-for="hero.text"></p>
+          </div>
+          <MediaField
+            label="Фоновое изображение"
+            name="hero.imageId"
+            image={getImageView(doc.hero.imageId)}
+            altName="hero.imageAlt"
+            alt={doc.hero.imageAlt}
+            hint="Горизонтальное фото не меньше 1920 пикселей по ширине. Текст ложится на левую часть."
+          />
+          <fieldset class="group">
+            <legend>Основная кнопка</legend>
+            <div class="form-grid">
+              <div class="field">
+                <label for="h-pl">Текст</label>
+                <input id="h-pl" type="text" name="hero.primaryLabel" value={doc.hero.primaryLabel} data-max="40" />
+                <p class="field__error" data-error-for="hero.primaryLabel"></p>
+              </div>
+              <div class="field">
+                <label for="h-ph">Ссылка</label>
+                <input id="h-ph" type="text" name="hero.primaryHref" value={doc.hero.primaryHref} />
+                <p class="field__hint">Например /#contact или /projects/</p>
+                <p class="field__error" data-error-for="hero.primaryHref"></p>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="group">
+            <legend>Вторая ссылка (необязательно)</legend>
+            <div class="form-grid">
+              <div class="field">
+                <label for="h-sl">Текст</label>
+                <input id="h-sl" type="text" name="hero.secondaryLabel" value={doc.hero.secondaryLabel} data-max="40" />
+                <p class="field__error" data-error-for="hero.secondaryLabel"></p>
+              </div>
+              <div class="field">
+                <label for="h-sh">Ссылка</label>
+                <input id="h-sh" type="text" name="hero.secondaryHref" value={doc.hero.secondaryHref} />
+                <p class="field__error" data-error-for="hero.secondaryHref"></p>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">Три карточки под первым экраном</h2>
+        </div>
+        <div class="form-grid form-grid--3">
+          {
+            doc.highlights.map((card, index) => (
+              <fieldset class="group">
+                <legend>Карточка {index + 1}</legend>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for={`hl-${index}-t`}>Заголовок</label>
+                    <input id={`hl-${index}-t`} type="text" name={`highlights.${index}.title`} value={card.title} data-max="60" />
+                    <p class="field__error" data-error-for={`highlights.${index}.title`} />
+                  </div>
+                  <div class="field">
+                    <label for={`hl-${index}-x`}>Текст</label>
+                    <input id={`hl-${index}-x`} type="text" name={`highlights.${index}.text`} value={card.text} data-max="120" />
+                    <p class="field__error" data-error-for={`highlights.${index}.text`} />
+                  </div>
+                  <div class="field">
+                    <label for={`hl-${index}-i`}>Значок</label>
+                    <select id={`hl-${index}-i`} name={`highlights.${index}.icon`}>
+                      {HIGHLIGHT_ICONS.map((icon) => (
+                        <option value={icon} selected={icon === card.icon}>
+                          {iconLabels[icon] ?? icon}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for={`hl-${index}-h`}>Ссылка</label>
+                    <input id={`hl-${index}-h`} type="text" name={`highlights.${index}.href`} value={card.href} />
+                    <p class="field__error" data-error-for={`highlights.${index}.href`} />
+                  </div>
+                </div>
+              </fieldset>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2 class="panel__title">Заголовки разделов</h2></div>
+        <div class="form-grid form-grid--2">
+          <fieldset class="group">
+            <legend>Услуги</legend>
+            <div class="form-grid">
+              <div class="field">
+                <label for="s-t">Заголовок</label>
+                <input id="s-t" type="text" name="services.title" value={doc.services.title} data-max="80" />
+                <p class="field__error" data-error-for="services.title"></p>
+              </div>
+              <div class="field">
+                <label for="s-x">Подзаголовок</label>
+                <input id="s-x" type="text" name="services.text" value={doc.services.text} data-max="200" />
+              </div>
+              <p class="field__hint">Сами услуги — в разделе <a href="/admin/services">Услуги</a>.</p>
+            </div>
+          </fieldset>
+          <fieldset class="group">
+            <legend>Проекты (галерея сразу после первого экрана)</legend>
+            <div class="form-grid">
+              <div class="field">
+                <label for="pr-t">Заголовок</label>
+                <input id="pr-t" type="text" name="projects.title" value={doc.projects.title} data-max="80" />
+                <p class="field__error" data-error-for="projects.title"></p>
+              </div>
+              <div class="field">
+                <label for="pr-x">Подзаголовок</label>
+                <input id="pr-x" type="text" name="projects.text" value={doc.projects.text} data-max="200" />
+              </div>
+              <div class="field">
+                <label for="pr-n">Пометка о примерах</label>
+                <input id="pr-n" type="text" name="projects.notice" value={doc.projects.notice} data-max="200" />
+                <p class="field__hint">Показывается, только если среди проектов есть «примеры формата».</p>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="panel" data-featured data-featured-limit={HOMEPAGE_PROJECTS}>
+        <div class="panel__head">
+          <h2 class="panel__title">Проекты на главной</h2>
+          <p class="panel__hint">
+            На главной показываются первые {HOMEPAGE_PROJECTS} опубликованных проектов из списка, остальные — в резерве и встанут на место
+            снятого с публикации. Порядок — перетаскиванием или стрелками. Все проекты доступны на странице /projects/.
+          </p>
+        </div>
+        <ul class="picklist" role="list" data-pick-list>
+          {
+            selected.map((project) => (
+              <li class:list={['pick', { 'is-invalid': project.status !== 'published' }]} data-pick data-id={project.id} draggable="true">
+                <span class="pick__handle" aria-hidden="true">⋮⋮</span>
+                {thumb(project) ? <img src={thumb(project)} alt="" /> : <span class="pick__noimg" />}
+                <span>
+                  <span class="pick__title" data-pick-title>{project.title}</span>
+                  <span class="pick__meta" data-pick-meta>
+                    {project.status !== 'published' ? 'Не опубликован — уберите или опубликуйте, иначе публикация главной не пройдёт' : categoryLabel(project.category)}
+                  </span>
+                </span>
+                <span class="pick__tools">
+                  <span class="muted" data-pick-index />
+                  <button type="button" class="icon-button" data-pick-up aria-label="Выше">↑</button>
+                  <button type="button" class="icon-button" data-pick-down aria-label="Ниже">↓</button>
+                  <button type="button" class="icon-button icon-button--danger" data-pick-remove aria-label="Убрать с главной">✕</button>
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="muted" data-pick-empty hidden>Подборка пуста — раздел «Проекты» на главной будет скрыт.</p>
+        <template data-pick-template>
+          <li class="pick" data-pick draggable="true">
+            <span class="pick__handle" aria-hidden="true">⋮⋮</span>
+            <img src="" alt="" />
+            <span><span class="pick__title" data-pick-title></span><span class="pick__meta" data-pick-meta></span></span>
+            <span class="pick__tools">
+              <span class="muted" data-pick-index></span>
+              <button type="button" class="icon-button" data-pick-up aria-label="Выше">↑</button>
+              <button type="button" class="icon-button" data-pick-down aria-label="Ниже">↓</button>
+              <button type="button" class="icon-button icon-button--danger" data-pick-remove aria-label="Убрать с главной">✕</button>
+            </span>
+          </li>
+        </template>
+        <div class="filters" style="margin:1rem 0 0">
+          <div class="field field--grow">
+            <label for="featured-select">Добавить проект</label>
+            <select id="featured-select" data-featured-select>
+              <option value="">Выберите опубликованный проект…</option>
+              {
+                published.map((project) => (
+                  <option value={project.id} hidden={selectedIds.has(project.id)} data-thumb={thumb(project)} data-meta={categoryLabel(project.category)}>
+                    {project.title}
+                  </option>
+                ))
+              }
+            </select>
+          </div>
+          <button class="button button--ghost" type="button" data-featured-add>Добавить</button>
+        </div>
+        <p class="field__error" data-error-for="featured"></p>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2 class="panel__title">Блок контактов</h2></div>
+        <div class="form-grid form-grid--2">
+          <div class="field">
+            <label for="c-t">Заголовок</label>
+            <input id="c-t" type="text" name="contact.title" value={doc.contact.title} data-max="120" />
+            <p class="field__error" data-error-for="contact.title"></p>
+          </div>
+          <div class="field">
+            <label for="c-x">Подзаголовок</label>
+            <input id="c-x" type="text" name="contact.text" value={doc.contact.text} data-max="200" />
+          </div>
+          <MediaField label="Фото рядом с формой" name="contact.imageId" image={getImageView(doc.contact.imageId)} altName="contact.imageAlt" alt={doc.contact.imageAlt} hint="Показывается на широких экранах." />
+          <p class="field__hint field--wide">Телефон, почта и адрес — в разделе <a href="/admin/settings">Настройки</a>.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2 class="panel__title">Поисковые системы и соцсети</h2></div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="seo-t">Заголовок главной (title)</label>
+            <input id="seo-t" type="text" name="seo.title" value={doc.seo.title} data-max="120" />
+            <p class="field__error" data-error-for="seo.title"></p>
+          </div>
+          <div class="field">
+            <label for="seo-d">Описание (meta description)</label>
+            <textarea id="seo-d" name="seo.description" rows="2" data-max="300">{doc.seo.description}</textarea>
+            <p class="field__error" data-error-for="seo.description"></p>
+          </div>
+        </div>
+      </section>
+    </form>
+
+    <DocAside docKey="homepage" preview="/admin/preview" />
+  </div>
+
+  <div class="savebar">
+    <span class="savebar__state" data-save-state data-clean-text="Черновик сохранён">Черновик сохранён</span>
+    <button class="button button--primary" type="button" data-doc-save>Сохранить черновик</button>
+  </div>
+</AdminLayout>
+
+<script>
+  import '@/scripts/admin/doc-editor';
+</script>
