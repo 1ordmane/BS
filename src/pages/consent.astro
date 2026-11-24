@@ -13,7 +13,7 @@ const { company } = Astro.locals.site;
 const details = operatorDetails();
 const channels = requestChannels(company);
 const inbox = mailTransport()?.to ?? INQUIRY_RECIPIENT;
-const data = [...formData.required, ...formData.optional.map((item) => `${item} (если указаны)`), ...formData.automatic];
+const data = [...formData.required, ...formData.optional.map((item) => `${item} (при наличии)`), ...formData.automatic];
 ---
 
 <LegalPage

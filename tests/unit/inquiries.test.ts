@@ -21,9 +21,14 @@ const valid = {
 
 test('server-side validation matches the public form', () => {
   assert.throws(
-    () => inquiries.createInquiry({ fields: { ...valid, email: 'nope', message: 'коротко', area: 'много', consent: '' } }),
-    (e: unknown) => e instanceof ValidationError && ['email', 'message', 'area', 'consent'].every((k) => k in e.fields),
+    () => inquiries.createInquiry({ fields: { ...valid, email: 'nope', area: 'много', consent: '' } }),
+    (e: unknown) => e instanceof ValidationError && ['email', 'area', 'consent'].every((k) => k in e.fields),
   );
+  // «О проекте» is optional: empty, blank or short is fine; only the length limit stays.
+  assert.equal(inquiries.parseInquiry({ ...valid, message: '' }).message, '');
+  assert.equal(inquiries.parseInquiry({ ...valid, message: '   ' }).message, '');
+  assert.equal(inquiries.parseInquiry({ ...valid, message: 'коротко' }).message, 'коротко');
+  assert.throws(() => inquiries.parseInquiry({ ...valid, message: 'а'.repeat(5001) }), (e: unknown) => e instanceof ValidationError && 'message' in e.fields);
   assert.throws(() => inquiries.createInquiry({ fields: { ...valid, phone: '12' } }), (e: unknown) => e instanceof ValidationError && 'phone' in e.fields);
   assert.throws(() => inquiries.parseInquiry({ ...valid, phone: '@anna_stand' }), fieldError('phone', /номер телефона/));
   assert.ok(inquiries.createInquiry({ fields: { ...valid, phone: '8 (900) 123-45-67' } }).id);
@@ -152,6 +157,28 @@ test('e-mail: without an email the phone is the way back, and there is no Reply-
     const eml = fs.readFileSync(path.join(outbox, fs.readdirSync(outbox)[0]!), 'utf8');
     assert.doesNotMatch(eml, /^Reply-To:/m);
     assert.match(eml, /^To: businesstend@yandex\.ru$/m);
+  } finally {
+    delete process.env.MAIL_OUTBOX_DIR;
+  }
+});
+
+test('e-mail: an inquiry without «О проекте» is sent and says the field was left empty', async () => {
+  const mail = await import('../../src/server/mail.ts');
+  const outbox = path.join(dir, 'outbox-no-message');
+  process.env.MAIL_OUTBOX_DIR = outbox;
+  try {
+    await mail.sendInquiryMail(inquiries.parseInquiry({ ...valid, message: '' }), null, 'https://example.ru');
+    const eml = fs.readFileSync(path.join(outbox, fs.readdirSync(outbox)[0]!), 'utf8');
+    // No attachment: a single-part message, the body follows the headers.
+    const encoding = eml.match(/^Content-Transfer-Encoding: (\S+)$/m)![1];
+    const body = eml.slice(eml.indexOf('\n\n') + 2);
+    const text =
+      encoding === 'base64'
+        ? Buffer.from(body, 'base64').toString('utf8')
+        : Buffer.from(body.replace(/=\n/g, '').replace(/=([0-9A-F]{2})/g, (_, h: string) => String.fromCharCode(parseInt(h, 16))), 'latin1').toString('utf8');
+    assert.match(text, /Имя: Анна/);
+    assert.match(text, /О проекте: клиент не заполнил это поле/);
+    assert.doesNotMatch(text, /О проекте:\n\n/);
   } finally {
     delete process.env.MAIL_OUTBOX_DIR;
   }

@@ -86,7 +86,8 @@ export function parseInquiry(fields: Record<string, unknown>): InquiryData {
     phone: f.text('phone', { max: 40 }),
     event: f.text('event', { max: 200 }),
     area: f.text('area', { max: 20 }),
-    message: f.text('message', { required: true, max: 5000, multiline: true }),
+    // Optional: the visitor may describe the project or leave it for the conversation.
+    message: f.text('message', { max: 5000, multiline: true }),
   };
   if (data.name && !isName(data.name)) f.fail('name', 'Укажите имя — хотя бы две буквы');
   // A way to reach the visitor: email, phone or both. Whatever is filled in must be valid.
@@ -94,7 +95,6 @@ export function parseInquiry(fields: Record<string, unknown>): InquiryData {
   if (data.phone && !isPhone(data.phone)) f.fail('phone', 'Введите номер телефона, например +7 900 123-45-67');
   if (!data.email && !data.phone) f.fail('contact', 'Укажите почту или телефон, чтобы мы могли с вами связаться');
   if (data.area && !AREA.test(data.area)) f.fail('area', 'Укажите площадь числом, например 36');
-  if (data.message && data.message.length < 20) f.fail('message', 'Опишите проект хотя бы в нескольких словах (от 20 символов)');
   if (!f.bool('consent')) f.fail('consent', 'Подтвердите согласие на обработку данных');
   f.finish();
   return data;

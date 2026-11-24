@@ -378,13 +378,21 @@ describe('inquiries', () => {
     const response = await send({ email: 'bad', message: 'коротко' });
     assert.equal(response.status, 422);
     const body = await json(response);
-    assert.ok(body.fields.email && body.fields.message);
+    assert.ok(body.fields.email);
+    assert.equal(body.fields.message, undefined, 'a short description is fine: the field is optional');
     // Neither email nor phone: one shared message for the pair.
     const none = await json(await send({ email: '', phone: '' }));
     assert.match(none.fields.contact, /почту или телефон/);
   });
 
   const messages = () => (fs.existsSync(outbox) ? fs.readdirSync(outbox).filter((f) => f.endsWith('.eml')).sort() : []);
+
+  test('an inquiry without a project description is accepted and e-mailed', async () => {
+    const before = messages().length;
+    const response = await send({ message: '' });
+    assert.equal(response.status, 200);
+    assert.equal(messages().length, before + 1);
+  });
 
   test('a valid inquiry with an attachment is e-mailed to the company, not stored on the site', async () => {
     const before = messages().length;

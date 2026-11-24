@@ -78,8 +78,8 @@ const accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.zip';
     </div>
 
     <div class="field field--full">
-      <label for="inquiry-message">{fields.message.label}</label>
-      <textarea id="inquiry-message" name="message" rows="5" required placeholder={fields.message.placeholder} aria-describedby="inquiry-message-error"></textarea>
+      <label for="inquiry-message">{fields.message.label} <span class="field__optional">{form.optional}</span></label>
+      <textarea id="inquiry-message" name="message" rows="5" maxlength="5000" placeholder={fields.message.placeholder} aria-describedby="inquiry-message-error"></textarea>
       <p class="field__error" id="inquiry-message-error" data-error-for="message"></p>
     </div>
 
@@ -535,9 +535,6 @@ const accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.zip';
           return value('email') || value('phone') ? '' : errors.contact;
         case 'area':
           return !value('area') || AREA.test(value('area')) ? '' : errors.area;
-        case 'message':
-          if (!value('message')) return errors.required;
-          return value('message').length >= 20 ? '' : errors.messageShort;
         case 'brief': {
           const file = fileInput.files?.[0];
           if (!file) return '';
@@ -569,7 +566,7 @@ const accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.zip';
     // The input that receives focus for an error.
     const focusTarget = (name: string) => (name === 'brief' ? fileInput : field(name === 'contact' ? 'email' : name));
 
-    const validated = ['name', 'email', 'phone', 'contact', 'area', 'message', 'brief', 'consent'];
+    const validated = ['name', 'email', 'phone', 'contact', 'area', 'brief', 'consent'];
 
     // Validate on leaving a field, then live while the visitor corrects it.
     validated.forEach((name) => {

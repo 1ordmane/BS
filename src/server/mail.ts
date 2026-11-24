@@ -65,7 +65,8 @@ function moscowTime(date: Date): string {
 function compose(data: InquiryData, file: { name: string; buffer: Buffer } | null, siteUrl: string, sentAt: Date) {
   const lines = ['Новая заявка с сайта BUSINESS STAND', ''];
   for (const [key, label] of LABELS) if (data[key]) lines.push(`${label}: ${data[key]}`);
-  lines.push('', 'О проекте:', data.message, '');
+  // The description is optional: say so plainly rather than leave an empty heading.
+  lines.push('', ...(data.message ? ['О проекте:', data.message] : ['О проекте: клиент не заполнил это поле']), '');
   if (file) lines.push(`Вложение: ${file.name} (${Math.max(1, Math.round(file.buffer.length / 1024))} КБ)`, '');
   lines.push(
     `Отправлена: ${moscowTime(sentAt)} (МСК)`,

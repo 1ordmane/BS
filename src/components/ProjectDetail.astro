@@ -303,9 +303,10 @@ const specs = [
 
   .project__next-link {
     display: grid;
-    grid-template-columns: 1fr auto;
+    /* minmax(0, …): a long title wraps instead of pushing the arrow off narrow screens */
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 0.5rem 2rem;
+    gap: 0.5rem clamp(1rem, 0.5rem + 2vw, 2rem);
     padding-block: clamp(3rem, 2rem + 3vw, 5rem);
     text-decoration: none;
   }
@@ -324,6 +325,8 @@ const specs = [
     line-height: var(--leading-heading);
     letter-spacing: var(--tracking-display);
     color: #fff;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 
   .project__next-arrow {
@@ -343,5 +346,12 @@ const specs = [
   .project__next-link:hover .project__next-arrow {
     background: var(--emerald);
     transform: translateX(6px);
+  }
+
+  @media (max-width: 480px) {
+    .project__next-arrow {
+      width: 48px;
+      height: 48px;
+    }
   }
 </style>
