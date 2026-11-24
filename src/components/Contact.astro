@@ -1,4 +1,5 @@
 ---
+import Icon from './Icon.astro';
 import InquiryForm from './InquiryForm.astro';
 import MessengerIcon from './MessengerIcon.astro';
 import { getContent } from '@/data';
@@ -12,6 +13,7 @@ import { messengerLinks } from '@/data/messengers';
 const { homepage, company } = Astro.locals.site;
 const contact = homepage.contact;
 const labels = getContent(Astro.currentLocale).contact;
+const copy = labels.copy;
 // Only the contact details filled in under Настройки; empty ones are left out.
 const channels = contactChannels(company).filter((channel) => channel.value);
 const links = messengerLinks(company);
@@ -66,10 +68,28 @@ const hasMessengers = Boolean(links.telegram || links.whatsapp || offersMax);
             {channels.map((channel) => (
               <div class="contact__channel">
                 <dt>{channel.label}</dt>
-                <dd>{channel.href ? <a href={channel.href}>{channel.value}</a> : channel.value}</dd>
+                <dd>
+                  {channel.href ? <a class="contact__value" href={channel.href}>{channel.value}</a> : <span class="contact__value">{channel.value}</span>}
+                  {channel.copy && (
+                    <button
+                      class="contact__copy"
+                      type="button"
+                      data-copy-text={channel.copy.text}
+                      aria-label={copy[channel.copy.label]}
+                      data-done={copy.done}
+                      data-failed={copy.failed}
+                      hidden
+                    >
+                      <Icon name="Copy" size={16} class="contact__copy-icon" />
+                      <Icon name="Check" size={16} class="contact__copy-done" />
+                      <span data-copy-label>{copy.button}</span>
+                    </button>
+                  )}
+                </dd>
               </div>
             ))}
           </dl>
+          <p class="visually-hidden" role="status" aria-live="polite" data-copy-status></p>
         )
       }
     </div>
@@ -171,10 +191,8 @@ const hasMessengers = Boolean(links.telegram || links.whatsapp || offersMax);
   }
 
   .contact__channel {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
+    display: grid;
+    gap: 0.35rem;
     padding-block: 0.9rem;
     border-top: 1px solid var(--line-on-dark);
     font-size: var(--text-sm);
@@ -188,13 +206,105 @@ const hasMessengers = Boolean(links.telegram || links.whatsapp || offersMax);
     color: var(--on-dark-muted);
   }
 
+  /* The value on the left (a tel:/mailto: link), its copy button on the right. */
   .contact__channel dd {
-    font-weight: var(--weight-ui);
-    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
   }
 
-  .contact__channel a {
+  .contact__value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-ui);
     color: #fff;
+  }
+
+  a.contact__value {
+    text-decoration: underline;
+    text-decoration-color: rgb(243 241 234 / 0.35);
+    text-underline-offset: 0.25em;
+    transition: text-decoration-color 0.25s var(--ease);
+  }
+
+  a.contact__value:hover {
+    text-decoration-color: #fff;
+  }
+
+  a.contact__value:focus-visible {
+    outline-color: var(--mint);
+    outline-offset: 3px;
+  }
+
+  .contact__copy {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 0.95rem;
+    border: 1px solid rgb(243 241 234 / 0.35);
+    border-radius: 999px;
+    background: none;
+    color: #fff;
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    cursor: pointer;
+    transition:
+      background-color 0.25s var(--ease),
+      border-color 0.25s var(--ease),
+      color 0.25s var(--ease);
+  }
+
+  .contact__copy[hidden] {
+    display: none;
+  }
+
+  /* Phones: the button moves up beside the label, so the number and the address keep a full line. */
+  @media (max-width: 560px) {
+    .contact__channel {
+      position: relative;
+    }
+
+    .contact__channel:has(.contact__copy:not([hidden])) dt {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    .contact__copy {
+      position: absolute;
+      top: 0.9rem;
+      right: 0;
+    }
+  }
+
+  .contact__copy:hover {
+    border-color: #fff;
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .contact__copy:focus-visible {
+    outline-color: var(--mint);
+  }
+
+  .contact__copy :global(.contact__copy-done),
+  .contact__copy.is-done :global(.contact__copy-icon) {
+    display: none;
+  }
+
+  .contact__copy.is-done :global(.contact__copy-done) {
+    display: inline;
+  }
+
+  .contact__copy.is-done {
+    border-color: var(--mint);
+    background: var(--mint);
+    color: var(--forest-deep);
   }
 
   .contact__form {
@@ -214,3 +324,50 @@ const hasMessengers = Boolean(links.telegram || links.whatsapp || offersMax);
     color: var(--forest);
   }
 </style>
+
+<script>
+  // Copy buttons beside the phone and the e-mail. They appear only when JavaScript runs.
+  const status = document.querySelector<HTMLElement>('[data-copy-status]');
+
+  /** The Clipboard API, or a selected hidden field where it is unavailable (older browsers, http). */
+  async function copyText(text: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const field = document.createElement('textarea');
+      field.value = text;
+      field.setAttribute('readonly', '');
+      field.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.append(field);
+      field.select();
+      let copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch {
+        copied = false;
+      }
+      field.remove();
+      return copied;
+    }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-copy-text]').forEach((button) => {
+    const label = button.querySelector<HTMLElement>('[data-copy-label]')!;
+    const idle = label.textContent ?? '';
+    let timer = 0;
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+      const copied = await copyText(button.dataset.copyText ?? '');
+      window.clearTimeout(timer);
+      button.classList.toggle('is-done', copied);
+      label.textContent = copied ? (button.dataset.done ?? '') : idle;
+      if (status) status.textContent = copied ? `${button.dataset.done}: ${button.dataset.copyText}` : (button.dataset.failed ?? '');
+      timer = window.setTimeout(() => {
+        button.classList.remove('is-done');
+        label.textContent = idle;
+        if (status) status.textContent = '';
+      }, 2000);
+    });
+  });
+</script>

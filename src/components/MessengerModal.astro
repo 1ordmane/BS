@@ -317,7 +317,17 @@ const offersMaxNumber = links.phoneDigits.length >= 10 && links.phoneDigits.leng
     let opener: HTMLElement | null = null;
 
     const open = (trigger: HTMLElement) => {
-      opener = trigger;
+      // An option of the «Связаться» menu disappears with the menu: return focus to its button.
+      opener = trigger.closest('[data-contact-menu]')?.querySelector<HTMLElement>('[data-contact-toggle]') ?? trigger;
+      // «MAX» in the header's «Связаться» menu: show the number for MAX straight away.
+      if (trigger.hasAttribute('data-messenger-max')) {
+        const maxToggle = dialog.querySelector<HTMLButtonElement>('[data-max-toggle]');
+        const maxPanel = dialog.querySelector<HTMLElement>('[data-max-panel]');
+        if (maxToggle && maxPanel) {
+          maxToggle.setAttribute('aria-expanded', 'true');
+          maxPanel.hidden = false;
+        }
+      }
       // The page behind stays put; the dialog itself makes it inert for clicks and focus.
       document.documentElement.style.overflow = 'hidden';
       dialog.showModal();

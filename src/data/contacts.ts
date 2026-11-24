@@ -6,6 +6,8 @@ export interface Channel {
   value: string;
   placeholder: string;
   href: string;
+  /** What the copy button puts on the clipboard: the bare number or address. */
+  copy?: { text: string; label: 'phone' | 'email' };
 }
 
 const placeholderOf = (label: string) => {
@@ -21,8 +23,15 @@ export function contactChannels(company: CompanyDoc): Channel[] {
       value: company.phone,
       placeholder: placeholderOf('Телефон'),
       href: company.phone ? `tel:${company.phone.replace(/[^\d+]/g, '')}` : '',
+      copy: company.phone ? { text: company.phone, label: 'phone' } : undefined,
     },
-    { label: 'Почта', value: company.email, placeholder: placeholderOf('Почта'), href: company.email ? `mailto:${company.email}` : '' },
+    {
+      label: 'Почта',
+      value: company.email,
+      placeholder: placeholderOf('Почта'),
+      href: company.email ? `mailto:${company.email}` : '',
+      copy: company.email ? { text: company.email, label: 'email' } : undefined,
+    },
     { label: 'Адрес', value: company.address, placeholder: placeholderOf('Адрес'), href: '' },
   ];
 }

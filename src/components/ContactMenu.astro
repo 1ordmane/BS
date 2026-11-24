@@ -1,0 +1,309 @@
+---
+import Icon from './Icon.astro';
+import MessengerIcon from './MessengerIcon.astro';
+import { getContent } from '@/data';
+import { messengerLinks } from '@/data/messengers';
+
+/**
+ * «Связаться» at the right end of the header: a compact menu with MAX, Telegram, WhatsApp and
+ * a phone call. The destinations come from the admin settings (Настройки → Мессенджеры), the
+ * same ones the messenger window and the contact section use; nothing here is hard-coded.
+ *
+ * - MAX has no documented chat link by phone number: without a profile link set in the admin
+ *   panel, its item opens the messenger window with the number to copy.
+ * - Without JavaScript the button is a plain link to the contact section.
+ * Keyboard: Enter/Space or ↓ opens and moves into the list, ↑/↓/Home/End move, Esc closes and
+ * returns to the button, Tab out of the list closes it.
+ */
+const { contactMenu: labels } = getContent(Astro.currentLocale).ui;
+const { company } = Astro.locals.site;
+const links = messengerLinks(company);
+const validNumber = links.phoneDigits.length >= 10 && links.phoneDigits.length <= 15;
+const call = validNumber ? `tel:+${links.phoneDigits}` : null;
+---
+
+<div class="contact-menu" data-contact-menu>
+  <a class="contact-menu__toggle" href="/#contact" data-contact-toggle aria-label={labels.label}>
+    <Icon name="MessageCircle" size={20} />
+    <span class="contact-menu__label">{labels.label}</span>
+    <Icon name="ChevronDown" size={16} class="contact-menu__chevron" />
+  </a>
+
+  <ul class="contact-menu__list" id="contact-menu-list" role="list" hidden data-contact-list>
+    {
+      links.max ? (
+        <li>
+          <a class="contact-menu__item" href={links.max} target="_blank" rel="noopener noreferrer">
+            <MessengerIcon name="max" size={22} />
+            MAX
+          </a>
+        </li>
+      ) : (
+        validNumber && (
+          <li>
+            <button class="contact-menu__item" type="button" data-messenger data-messenger-max aria-haspopup="dialog">
+              <MessengerIcon name="max" size={22} />
+              MAX
+            </button>
+          </li>
+        )
+      )
+    }
+    {
+      links.telegram && (
+        <li>
+          <a class="contact-menu__item" href={links.telegram} target="_blank" rel="noopener noreferrer">
+            <MessengerIcon name="telegram" size={22} />
+            Telegram
+          </a>
+        </li>
+      )
+    }
+    {
+      links.whatsapp && (
+        <li>
+          <a class="contact-menu__item" href={links.whatsapp} target="_blank" rel="noopener noreferrer">
+            <MessengerIcon name="whatsapp" size={22} />
+            WhatsApp
+          </a>
+        </li>
+      )
+    }
+    {
+      call && (
+        <li>
+          <a class="contact-menu__item" href={call}>
+            <span class="contact-menu__phone-icon"><Icon name="Phone" size={16} strokeWidth={2} /></span>
+            <span class="contact-menu__call">
+              {labels.call}
+              <small>{company.phone || links.phone}</small>
+            </span>
+          </a>
+        </li>
+      )
+    }
+  </ul>
+</div>
+
+<style>
+  .contact-menu {
+    position: relative;
+  }
+
+  .contact-menu__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 46px;
+    padding: 0 1.1rem 0 1rem;
+    border-radius: 999px;
+    background: var(--emerald);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-ui);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 0.25s var(--ease),
+      box-shadow 0.3s var(--ease);
+  }
+
+  .contact-menu__toggle:hover,
+  .contact-menu__toggle[aria-expanded='true'] {
+    background: var(--forest);
+    box-shadow: 0 12px 28px -12px rgb(0 107 80 / 0.7);
+  }
+
+  .contact-menu__toggle:focus-visible {
+    outline-offset: 3px;
+  }
+
+  .contact-menu__toggle :global(.contact-menu__chevron) {
+    transition: transform 0.25s var(--ease);
+  }
+
+  .contact-menu__toggle[aria-expanded='true'] :global(.contact-menu__chevron) {
+    transform: rotate(180deg);
+  }
+
+  /* Over the header and its hanging logo, aligned to the button's right edge. */
+  .contact-menu__list {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    z-index: 5;
+    display: grid;
+    gap: 0.25rem;
+    width: max-content;
+    min-width: 15rem;
+    max-width: calc(100vw - 2 * var(--gutter));
+    margin: 0;
+    padding: 0.4rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--paper-raised);
+    box-shadow:
+      0 2px 6px rgb(13 48 40 / 0.12),
+      0 24px 48px -20px rgb(13 48 40 / 0.45);
+  }
+
+  .contact-menu__list.is-open {
+    animation: contact-menu-in 0.2s var(--ease-out);
+  }
+
+  @keyframes contact-menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  .contact-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.4rem 0.75rem;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--forest);
+    font: inherit;
+    font-size: var(--text-base);
+    font-weight: var(--weight-ui);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s var(--ease);
+  }
+
+  .contact-menu__item:hover,
+  .contact-menu__item:focus-visible {
+    background: var(--emerald-soft);
+  }
+
+  .contact-menu__item:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .contact-menu__phone-icon {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--emerald);
+    color: #fff;
+  }
+
+  .contact-menu__call {
+    display: grid;
+    line-height: 1.25;
+  }
+
+  .contact-menu__call small {
+    font-size: var(--text-xs);
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* Phones: the word alone fits beside the logo. */
+  @media (max-width: 420px) {
+    .contact-menu__toggle {
+      min-height: 44px;
+      padding: 0 0.9rem;
+    }
+
+    .contact-menu__toggle :global(.icon) {
+      display: none;
+    }
+  }
+
+  /* The narrowest phones: only the icon; the name is still read out (aria-label). */
+  @media (max-width: 359px) {
+    .contact-menu__toggle {
+      width: 44px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    .contact-menu__toggle :global(.icon:first-child) {
+      display: block;
+    }
+
+    .contact-menu__label {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-contact-menu]');
+  const toggle = root?.querySelector<HTMLAnchorElement>('[data-contact-toggle]');
+  const list = root?.querySelector<HTMLElement>('[data-contact-list]');
+
+  if (root && toggle && list && list.children.length > 0) {
+    // With JavaScript the link becomes the menu button.
+    toggle.setAttribute('role', 'button');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', list.id);
+
+    const items = () => [...list.querySelectorAll<HTMLElement>('.contact-menu__item')];
+    const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
+
+    const setOpen = (open: boolean, focus: 'first' | 'last' | 'toggle' | null = null) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      list.hidden = !open;
+      list.classList.toggle('is-open', open);
+      if (open && focus === 'first') items()[0]?.focus();
+      if (open && focus === 'last') items().at(-1)?.focus();
+      if (!open && focus === 'toggle') toggle.focus();
+    };
+
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      // Opened by keyboard (detail 0): move into the list so the options can be chosen at once.
+      setOpen(!isOpen(), (event as MouseEvent).detail === 0 ? 'first' : null);
+    });
+
+    toggle.addEventListener('keydown', (event) => {
+      if (event.key === ' ') {
+        event.preventDefault();
+        setOpen(!isOpen(), 'first');
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        setOpen(true, event.key === 'ArrowDown' ? 'first' : 'last');
+      }
+    });
+
+    list.addEventListener('keydown', (event) => {
+      const all = items();
+      const index = all.indexOf(document.activeElement as HTMLElement);
+      const move = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: all.length - 1 }[event.key];
+      if (move !== undefined) {
+        event.preventDefault();
+        all[(move + all.length) % all.length]?.focus();
+      }
+    });
+
+    // Choosing an option closes the menu (the MAX option then opens the messenger window).
+    list.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('.contact-menu__item')) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen()) setOpen(false, 'toggle');
+    });
+
+    // A click or focus anywhere outside closes it.
+    document.addEventListener('click', (event) => {
+      if (isOpen() && !root.contains(event.target as Node)) setOpen(false);
+    });
+    root.addEventListener('focusout', (event) => {
+      const next = (event as FocusEvent).relatedTarget as Node | null;
+      if (isOpen() && next && !root.contains(next)) setOpen(false);
+    });
+  }
+</script>

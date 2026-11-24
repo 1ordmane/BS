@@ -299,9 +299,10 @@ export function defaultDoc<K extends DocKey>(key: K, images: Partial<Record<stri
     company: {
       name: ru.company.name,
       description: ru.footer.description,
-      // Not confirmed by the company yet: shown on the site as marked placeholders.
-      phone: '',
-      email: '',
+      // Confirmed by the company. The e-mail is also where inquiries are sent (src/server/mail.ts).
+      phone: '+7 985 415 23 58',
+      email: 'businesstend@yandex.ru',
+      // Not confirmed yet: left out of the site until filled in.
       address: '',
       telegram: '',
       vk: '',

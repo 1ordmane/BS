@@ -403,6 +403,8 @@ const contact = {
   imageAlt: 'Светлый пустой зал с белыми колоннами, готовый к застройке',
   messengersTitle: 'Быстрее всего — в мессенджере',
   formTitle: 'Или оставьте заявку',
+  /** Copy buttons beside the phone and the e-mail (Contact.astro). */
+  copy: { button: 'Копировать', done: 'Скопировано', phone: 'Копировать номер телефона', email: 'Копировать адрес почты', failed: 'Не удалось скопировать — выделите текст вручную' },
   channels: [
     { label: 'Телефон', value: { placeholder: '+7 (000) 000-00-00' } },
     { label: 'Почта', value: { placeholder: 'info@company.ru' } },
@@ -526,6 +528,8 @@ const ui = {
   menuOpen: 'Открыть меню',
   menuClose: 'Закрыть меню',
   mainNav: 'Основная навигация',
+  /** «Связаться» menu in the header (ContactMenu.astro). */
+  contactMenu: { label: 'Связаться', call: 'Позвонить' },
   home: 'BUSINESS STAND — на главную',
   placeholderTitle: 'Данные будут уточнены',
   backHome: '← На главную',
