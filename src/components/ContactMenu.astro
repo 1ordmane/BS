@@ -5,8 +5,8 @@ import { getContent } from '@/data';
 import { messengerLinks } from '@/data/messengers';
 
 /**
- * «Связаться» at the right end of the header: a compact menu with MAX, Telegram, WhatsApp and
- * a phone call. The destinations come from the admin settings (Настройки → Мессенджеры), the
+ * «Связаться» at the right end of the header: a compact menu with MAX, Telegram, WhatsApp,
+ * a phone call and the e-mail address (a mailto: link with its own copy button). The destinations come from the admin settings (Настройки → Мессенджеры), the
  * same ones the messenger window and the contact section use; nothing here is hard-coded.
  *
  * - MAX has no documented chat link by phone number: without a profile link set in the admin
@@ -20,6 +20,7 @@ const { company } = Astro.locals.site;
 const links = messengerLinks(company);
 const validNumber = links.phoneDigits.length >= 10 && links.phoneDigits.length <= 15;
 const call = validNumber ? `tel:+${links.phoneDigits}` : null;
+const email = company.email;
 ---
 
 <div class="contact-menu" data-contact-menu>
@@ -82,7 +83,34 @@ const call = validNumber ? `tel:+${links.phoneDigits}` : null;
         </li>
       )
     }
+    {
+      email && (
+        <li class="contact-menu__row">
+          <a class="contact-menu__item" href={`mailto:${email}`}>
+            <span class="contact-menu__phone-icon"><Icon name="Mail" size={14} strokeWidth={2} /></span>
+            <span class="contact-menu__call">
+              {labels.email}
+              <small class="contact-menu__address">{email}</small>
+            </span>
+          </a>
+          <button
+            class="contact-menu__copy"
+            type="button"
+            aria-label={labels.copyEmail}
+            data-menu-copy={email}
+            data-done={labels.copied}
+            data-failed={labels.copyFailed}
+            hidden
+          >
+            <Icon name="Copy" size={16} class="contact-menu__copy-icon" />
+            <Icon name="Check" size={16} strokeWidth={2} class="contact-menu__copy-done" />
+            <span class="contact-menu__copy-text" aria-hidden="true">{labels.copied}</span>
+          </button>
+        </li>
+      )
+    }
   </ul>
+  <p class="visually-hidden" role="status" aria-live="polite" data-menu-copy-status></p>
 </div>
 
 <style>
@@ -189,6 +217,7 @@ const call = validNumber ? `tel:+${links.phoneDigits}` : null;
   }
 
   .contact-menu__phone-icon {
+    flex-shrink: 0;
     display: grid;
     place-items: center;
     width: 22px;
@@ -207,6 +236,92 @@ const call = validNumber ? `tel:+${links.phoneDigits}` : null;
     font-size: var(--text-xs);
     font-weight: 400;
     color: var(--muted);
+  }
+
+  /* E-mail: the mailto: link and, beside it, its copy button. */
+  .contact-menu__row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .contact-menu__row .contact-menu__item {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .contact-menu__address {
+    overflow-wrap: anywhere;
+  }
+
+  .contact-menu__copy {
+    position: relative;
+    display: inline-grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--forest);
+    font: inherit;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-ui);
+    cursor: pointer;
+    transition:
+      background-color 0.2s var(--ease),
+      border-color 0.2s var(--ease);
+  }
+
+  .contact-menu__copy[hidden] {
+    display: none;
+  }
+
+  .contact-menu__copy:hover {
+    border-color: var(--emerald);
+    background: var(--emerald-soft);
+  }
+
+  /* Idle: the copy icon. Done: a check, and «Скопировано» rises above the button for two
+     seconds without moving anything in the row. */
+  .contact-menu__copy :global(.contact-menu__copy-done),
+  .contact-menu__copy.is-done :global(.contact-menu__copy-icon) {
+    display: none;
+  }
+
+  .contact-menu__copy.is-done :global(.contact-menu__copy-done) {
+    display: block;
+  }
+
+  .contact-menu__copy-text {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    padding: 0.3rem 0.65rem;
+    border-radius: 8px;
+    background: var(--forest);
+    color: #fff;
+    font-size: var(--text-xs);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 0.2s var(--ease),
+      transform 0.2s var(--ease);
+  }
+
+  .contact-menu__copy.is-done .contact-menu__copy-text {
+    opacity: 1;
+    transform: none;
+  }
+
+  .contact-menu__copy.is-done {
+    border-color: var(--emerald);
+    background: var(--emerald);
+    color: #fff;
   }
 
   /* Phones: the word alone fits beside the logo. */
@@ -240,6 +355,8 @@ const call = validNumber ? `tel:+${links.phoneDigits}` : null;
 </style>
 
 <script>
+  import { copyText } from '@/scripts/copy';
+
   const root = document.querySelector<HTMLElement>('[data-contact-menu]');
   const toggle = root?.querySelector<HTMLAnchorElement>('[data-contact-toggle]');
   const list = root?.querySelector<HTMLElement>('[data-contact-list]');
@@ -250,7 +367,8 @@ const call = validNumber ? `tel:+${links.phoneDigits}` : null;
     toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('aria-controls', list.id);
 
-    const items = () => [...list.querySelectorAll<HTMLElement>('.contact-menu__item')];
+    // The arrow keys move through the options and the e-mail's copy button alike.
+    const items = () => [...list.querySelectorAll<HTMLElement>('.contact-menu__item, .contact-menu__copy:not([hidden])')];
     const isOpen = () => toggle.getAttribute('aria-expanded') === 'true';
 
     const setOpen = (open: boolean, focus: 'first' | 'last' | 'toggle' | null = null) => {
@@ -304,6 +422,25 @@ const call = validNumber ? `tel:+${links.phoneDigits}` : null;
     root.addEventListener('focusout', (event) => {
       const next = (event as FocusEvent).relatedTarget as Node | null;
       if (isOpen() && next && !root.contains(next)) setOpen(false);
+    });
+  }
+
+  // The e-mail's copy button: the menu stays open, the button confirms for two seconds.
+  const copyButton = root?.querySelector<HTMLButtonElement>('[data-menu-copy]');
+  const copyStatus = root?.querySelector<HTMLElement>('[data-menu-copy-status]');
+  if (copyButton) {
+    let timer = 0;
+    copyButton.hidden = false;
+    copyButton.addEventListener('click', async () => {
+      const address = copyButton.dataset.menuCopy ?? '';
+      const copied = await copyText(address);
+      window.clearTimeout(timer);
+      copyButton.classList.toggle('is-done', copied);
+      if (copyStatus) copyStatus.textContent = copied ? `${copyButton.dataset.done}: ${address}` : (copyButton.dataset.failed ?? '');
+      timer = window.setTimeout(() => {
+        copyButton.classList.remove('is-done');
+        if (copyStatus) copyStatus.textContent = '';
+      }, 2000);
     });
   }
 </script>

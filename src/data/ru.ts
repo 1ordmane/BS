@@ -529,7 +529,14 @@ const ui = {
   menuClose: 'Закрыть меню',
   mainNav: 'Основная навигация',
   /** «Связаться» menu in the header (ContactMenu.astro). */
-  contactMenu: { label: 'Связаться', call: 'Позвонить' },
+  contactMenu: {
+    label: 'Связаться',
+    call: 'Позвонить',
+    email: 'Почта',
+    copyEmail: 'Копировать адрес почты',
+    copied: 'Скопировано',
+    copyFailed: 'Не удалось скопировать — выделите адрес вручную',
+  },
   home: 'BUSINESS STAND — на главную',
   placeholderTitle: 'Данные будут уточнены',
   backHome: '← На главную',
