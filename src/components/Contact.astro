@@ -224,10 +224,18 @@ const hasMessengers = Boolean(links.telegram || links.whatsapp || offersMax);
   }
 
   a.contact__value {
+    position: relative;
     text-decoration: underline;
     text-decoration-color: rgb(243 241 234 / 0.35);
     text-underline-offset: 0.25em;
     transition: text-decoration-color 0.25s var(--ease);
+  }
+
+  /* A finger-sized target around the number and the address, without moving anything. */
+  a.contact__value::before {
+    content: '';
+    position: absolute;
+    inset: -8px -4px;
   }
 
   a.contact__value:hover {

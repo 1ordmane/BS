@@ -323,6 +323,29 @@ const plural = (n: number) => {
       transform: translateY(2rem);
     }
 
+    .portfolio-sheet__foot .button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  /* Phones held sideways: the screen is short, so the card fills it and the bar is lower. */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .portfolio-sheet {
+      padding-block: 0.5rem 0;
+    }
+
+    .portfolio-sheet__panel {
+      border-radius: 14px 14px 0 0;
+    }
+
+    .portfolio-sheet__body {
+      padding-top: 1rem;
+    }
+  }
+
+  /* Phones, either way up: the formats are one row to swipe, so the projects start right under it. */
+  @media (max-width: 639px), (max-height: 500px) and (orientation: landscape) {
     .portfolio-sheet__bar {
       min-height: 64px;
     }
@@ -341,11 +364,6 @@ const plural = (n: number) => {
 
     .chip {
       flex-shrink: 0;
-    }
-
-    .portfolio-sheet__foot .button {
-      width: 100%;
-      justify-content: center;
     }
   }
 

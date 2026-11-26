@@ -118,6 +118,17 @@ const specs = [
     padding-bottom: clamp(2.5rem, 2rem + 2vw, 4rem);
   }
 
+  /* «← Все проекты»: a finger-sized target around the short link, without moving anything. */
+  .project__back {
+    position: relative;
+  }
+
+  .project__back::before {
+    content: '';
+    position: absolute;
+    inset: -10px -8px;
+  }
+
   .project__intro {
     display: grid;
     gap: 1.75rem;

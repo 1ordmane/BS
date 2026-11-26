@@ -166,6 +166,10 @@ const email = company.email;
     width: max-content;
     min-width: 15rem;
     max-width: calc(100vw - 2 * var(--gutter));
+    /* On a short screen (a phone held sideways) the list scrolls instead of running off it. */
+    max-height: calc(100dvh - var(--header-h) - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     margin: 0;
     padding: 0.4rem;
     border: 1px solid var(--line);
@@ -322,6 +326,13 @@ const email = company.email;
     border-color: var(--emerald);
     background: var(--emerald);
     color: #fff;
+  }
+
+  @media (max-height: 500px) and (orientation: landscape) {
+    .contact-menu__item {
+      min-height: 44px;
+      padding-block: 0.25rem;
+    }
   }
 
   /* Phones: the word alone fits beside the logo. */

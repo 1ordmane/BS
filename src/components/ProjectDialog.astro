@@ -108,11 +108,13 @@ const items = publishedCards().map((card) => {
               </section>
             )}
 
+            <!-- Phones: the link to the project page ends the text, and the bar keeps only the main action. -->
+            <a class="detail__page detail__page--inline" href={`/projects/${card.slug}/`}>{viewer.page}</a>
           </div>
 
           <div class="detail__actions">
             <a class="button button--primary" href="/#contact" data-messenger>{labels.cta}</a>
-            <a class="detail__page" href={`/projects/${card.slug}/`}>{viewer.page}</a>
+            <a class="detail__page detail__page--bar" href={`/projects/${card.slug}/`}>{viewer.page}</a>
           </div>
         </div>
       </div>
@@ -373,13 +375,55 @@ const items = publishedCards().map((card) => {
   }
 
   .detail__page {
+    position: relative;
     font-size: var(--text-sm);
     font-weight: var(--weight-ui);
     color: var(--forest);
     text-underline-offset: 0.25em;
   }
 
-  @media (min-width: 900px) {
+  /* A finger-sized target around the short link, without moving anything. */
+  .detail__page::before {
+    content: '';
+    position: absolute;
+    inset: -12px -8px;
+  }
+
+  .detail__page--inline {
+    justify-self: start;
+  }
+
+  /* Large screens: the link sits in the bar beside the main action. */
+  @media (min-width: 900px) and (min-height: 501px) {
+    .detail__page--inline {
+      display: none;
+    }
+  }
+
+  /* Phones and small tablets: the bar keeps only the main action, as wide as the bar. */
+  @media (max-width: 899px), (max-height: 500px) {
+    .detail__page--bar {
+      display: none;
+    }
+
+    .detail__actions {
+      padding-block: 0.75rem;
+    }
+
+    .detail__actions .button {
+      flex: 1;
+    }
+
+    .work-dialog {
+      width: 100vw;
+      height: 100dvh;
+      border-radius: 0;
+    }
+  }
+
+  /* Photos beside the text: large screens, and phones held sideways (otherwise the photo alone
+     fills the short screen and the text and the action start below it). */
+  @media (min-width: 900px), (min-width: 560px) and (max-height: 500px) {
     .detail {
       grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     }
@@ -389,13 +433,25 @@ const items = publishedCards().map((card) => {
     }
   }
 
-  @media (max-width: 899px) {
-    .work-dialog {
-      width: 100vw;
-      height: 100dvh;
-      border-radius: 0;
+  @media (min-width: 560px) and (max-width: 899px) and (max-height: 500px) {
+    .detail {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
+    .detail__text {
+      gap: 1rem;
+      padding: 1.25rem 1.25rem 1.5rem;
+      /* clear of the close button in the corner */
+      padding-top: 4.25rem;
+    }
+
+    .detail__actions {
+      padding-inline: 1.25rem;
+    }
+  }
+
+  /* Photos above the text: phones and tablets held upright. */
+  @media (max-width: 559px), (max-width: 899px) and (min-height: 501px) {
     .work-dialog__body {
       overflow-y: auto;
     }

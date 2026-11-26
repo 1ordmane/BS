@@ -308,6 +308,27 @@ const right = nav.slice(3);
     }
   }
 
+  /* Phones held sideways: the same logo, smaller, so the bar and the logo leave room for the page;
+     the menu's links are set tighter so all of them and the button fit on the short screen. */
+  @media (max-width: 1080px) and (max-height: 500px) and (orientation: landscape) {
+    .site-header__logo {
+      width: 84px;
+      height: 84px;
+      margin-top: 6px;
+    }
+
+    .mobile-menu__inner {
+      gap: 1.25rem;
+      padding-top: 2.75rem;
+      padding-bottom: 1.5rem;
+    }
+
+    .mobile-menu__list a {
+      padding-block: 0.55rem;
+      font-size: 1.5rem;
+    }
+  }
+
   @media (min-width: 1081px) {
     .mobile-menu {
       display: none;
