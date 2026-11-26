@@ -17,6 +17,8 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
+// Vite's own bundler (installed with Astro): used to inline component scripts that share a module.
+import { rolldown } from 'rolldown';
 
 const root = process.cwd();
 const output = path.join(root, 'BuSt.html');
@@ -91,11 +93,34 @@ try {
 
   /* ---------- Scripts (deduplicated, in page order) ---------- */
 
+  // Component scripts that share a module (e.g. the copy helper used by the contact section
+  // and the «Связаться» menu) are emitted as files importing a common chunk; each is bundled
+  // here with its imports into one self-contained inline module.
+  const bundled = new Map<string, string>();
+  async function inlineModule(src: string): Promise<string> {
+    if (!bundled.has(src)) {
+      if (!src.startsWith('/_astro/')) throw new Error(`external script outside the build: ${src}`);
+      const result = await rolldown({ input: path.join(client, src), logLevel: 'silent' });
+      const { output } = await result.generate({ format: 'esm', minify: true });
+      await result.close();
+      if (output.length !== 1 || /\bimport\s*[{(*\w]/.test(output[0].code) || output[0].code.includes('</script')) throw new Error(`could not bundle ${src}`);
+      bundled.set(src, output[0].code);
+    }
+    return bundled.get(src)!;
+  }
+
   const scripts: { attrs: string; body: string }[] = [];
   for (const page of pages) {
     for (const m of page.html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)) {
-      if (/\ssrc=/.test(m[1]!)) throw new Error(`external script in ${page.url}`);
-      if (!scripts.some((s) => s.body === m[2])) scripts.push({ attrs: m[1]!, body: m[2]! });
+      let attrs = m[1]!;
+      let body = m[2]!;
+      const src = attrs.match(/\ssrc="([^"]+)"/)?.[1];
+      if (src) {
+        if (!/type="module"/.test(attrs)) throw new Error(`external classic script in ${page.url}: ${src}`);
+        attrs = ' type="module"';
+        body = await inlineModule(src);
+      }
+      if (!scripts.some((s) => s.body === body)) scripts.push({ attrs, body });
     }
   }
 
